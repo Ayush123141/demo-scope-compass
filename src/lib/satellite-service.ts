@@ -1,30 +1,82 @@
 /**
  * Satellite Imagery Service for Mitti Sentinel
  * Primary: Sentinel Hub (Copernicus Sentinel-2 L2A) True-Color & NDVI layers
- * Fallback: ISRO Bhuvan WMS (NRSC)
- * Plot coordinates: 19.8762° N, 75.3433° E (Chhatrapati Sambhajinagar, Maharashtra)
+ * Fallback: ISRO Bhuvan WMS (NRSC) / High-Res Earth Observation
  */
 
 export interface FarmPlotCoordinates {
-  latitude: number;
-  longitude: number;
+  id: string;
   name: string;
   region: string;
+  cropType: string;
+  latitude: number;
+  longitude: number;
   boundaryPolygon: [number, number][]; // [lat, lng] array
 }
 
-export const TARGET_FARM_PLOT: FarmPlotCoordinates = {
-  latitude: 19.8762,
-  longitude: 75.3433,
-  name: "Marathwada Agricultural Plot 4B",
-  region: "Chhatrapati Sambhajinagar, Maharashtra",
-  boundaryPolygon: [
-    [19.8792, 75.3405],
-    [19.8795, 75.3462],
-    [19.8732, 75.3458],
-    [19.8728, 75.3402],
-  ],
-};
+export function createPlotBoundary(lat: number, lng: number, delta = 0.0035): [number, number][] {
+  return [
+    [lat + delta, lng - delta * 0.9],
+    [lat + delta * 1.05, lng + delta * 0.95],
+    [lat - delta * 0.95, lng + delta * 0.9],
+    [lat - delta, lng - delta * 0.95],
+  ];
+}
+
+export const PRESET_FARM_PLOTS: FarmPlotCoordinates[] = [
+  {
+    id: "plot-mh-csn",
+    name: "Marathwada Plot 4B",
+    region: "Chhatrapati Sambhajinagar, MH",
+    cropType: "Cotton & Soybean",
+    latitude: 19.8762,
+    longitude: 75.3433,
+    boundaryPolygon: [
+      [19.8792, 75.3405],
+      [19.8795, 75.3462],
+      [19.8732, 75.3458],
+      [19.8728, 75.3402],
+    ],
+  },
+  {
+    id: "plot-mh-nsk",
+    name: "Dindori Vineyard Plot 2",
+    region: "Nashik, Maharashtra",
+    cropType: "Table Grapes & Onions",
+    latitude: 20.0063,
+    longitude: 73.8188,
+    boundaryPolygon: createPlotBoundary(20.0063, 73.8188),
+  },
+  {
+    id: "plot-mh-ngp",
+    name: "Kalmeshwar Citrus Grove",
+    region: "Vidarbha, Nagpur, MH",
+    cropType: "Nagpur Mandarin Oranges",
+    latitude: 21.1458,
+    longitude: 79.0882,
+    boundaryPolygon: createPlotBoundary(21.1458, 79.0882),
+  },
+  {
+    id: "plot-mh-pune",
+    name: "Baramati Canefield",
+    region: "Pune Agro-Belt, MH",
+    cropType: "Sugarcane",
+    latitude: 18.1528,
+    longitude: 74.5771,
+    boundaryPolygon: createPlotBoundary(18.1528, 74.5771),
+  },
+  {
+    id: "plot-pb-ldh",
+    name: "Ludhiana Farm Basin",
+    region: "Punjab Heartland",
+    cropType: "Wheat & Mustard",
+    latitude: 30.901,
+    longitude: 75.8573,
+    boundaryPolygon: createPlotBoundary(30.901, 75.8573),
+  },
+];
+
+export const TARGET_FARM_PLOT = PRESET_FARM_PLOTS[0]!;
 
 export interface SatellitePass {
   id: string;
@@ -38,7 +90,7 @@ export interface SatellitePass {
 
 /**
  * Sentinel-2 orbits revisit roughly every 5 days.
- * Real orbital passes over Marathwada region.
+ * Real orbital passes over Maharashtra agricultural belts.
  */
 export const SATELLITE_PASS_HISTORY: SatellitePass[] = [
   {
@@ -105,12 +157,6 @@ export function isSatellitePassFresh(pass: SatellitePass | null | undefined, now
   return age >= 0 && age <= SATELLITE_STALE_THRESHOLD_MS;
 }
 
-/**
- * Tile layer configurations for Leaflet:
- * - True-color: High resolution satellite imagery from Copernicus / Esri World Imagery (ArcGIS) with crisp resolution down to zoom 19.
- * - NDVI / False-color: Specialized vegetation enhancement highlighting chlorophyll absorption (NIR band 8 vs Red band 4).
- * - ISRO Bhuvan Open WMS: Thematic Land Use / Land Cover (LULC) and multi-spectral base from NRSC.
- */
 export const TILE_LAYERS = {
   trueColor: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
