@@ -144,8 +144,8 @@ button, a, select { -webkit-tap-highlight-color: transparent; }
 .field-map-shell { height: 466px; flex: 1; min-height: 356px; position: relative; isolation: isolate; overflow: hidden; border-radius: 4px; border: 1px solid color-mix(in oklab, var(--field-mint) 19%, transparent); background: var(--background); }
 .field-map { position: absolute; inset: 0; background: color-mix(in oklab, var(--field-panel) 65%, var(--background)); touch-action: pan-x pan-y; }
 .field-map .leaflet-container { background: color-mix(in oklab, var(--field-panel) 65%, var(--background)); font: inherit; outline: none; }
-.field-map .leaflet-image-layer { transition: filter .28s ease; }
-.field-mode-vegetation .leaflet-image-layer { filter: hue-rotate(13deg) saturate(1.52) brightness(.9) sepia(.16) contrast(1.04); }
+.field-map .leaflet-image-layer, .field-map .leaflet-tile-pane { transition: filter .28s ease; }
+.field-mode-vegetation .leaflet-image-layer, .field-mode-vegetation .leaflet-tile-pane { filter: hue-rotate(65deg) saturate(2.2) contrast(1.2) brightness(0.92); }
 .field-map-shell:has(.field-map[data-scene="0"]) .leaflet-image-layer,
 .field-map-shell:has(.field-map[data-scene="1"]) .leaflet-image-layer { filter: saturate(.66) brightness(.83); }
 .field-map-shell.field-mode-vegetation:has(.field-map[data-scene="0"]) .leaflet-image-layer,
