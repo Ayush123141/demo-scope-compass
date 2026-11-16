@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project architecture
+- Keep Phase 1 product UI and transparent demo sensor/satellite/forecast fixtures in browser-safe modules; real data ingestion and persistence wait for validated device and location inputs, avoiding fabricated live integrations.
