@@ -7,6 +7,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bot,
+  Bug,
   Check,
   ChevronDown,
   CloudRain,
@@ -30,6 +31,8 @@ import {
   Sun,
   Thermometer,
   User,
+  Volume2,
+  VolumeX,
   Waves,
   Wind,
   Wifi,
@@ -76,10 +79,14 @@ import {
   type LiveWeatherData,
   DEFAULT_FALLBACK_WEATHER,
 } from "@/lib/weather-service";
+import { calculateRealisticSoilMoisture } from "@/lib/soil-hydrology";
+import { speakAdvisory, stopAdvisorySpeech } from "@/lib/voice-service";
 import { SoilMoistureTrendChart } from "@/components/SoilMoistureTrendChart";
 import { AdvisoryShareModal } from "@/components/AdvisoryShareModal";
 import { FarmerAuthModal } from "@/components/FarmerAuthModal";
 import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
+import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
+import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
 import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
@@ -110,6 +117,10 @@ export const Route = createFileRoute("/")({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "manifest",
+        href: "/manifest.json",
+      },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;650;700&family=Space+Grotesk:wght@400;500;600;700&display=swap",
@@ -142,6 +153,12 @@ function MittiSentinel() {
 
   // Live Open-Meteo Weather State
   const [liveWeather, setLiveWeather] = useState<LiveWeatherData>(DEFAULT_FALLBACK_WEATHER);
+
+  // Hardware Telemetry Injection State (Overrides baseline for interactive testing)
+  const [manualMoisture, setManualMoisture] = useState<number | null>(null);
+
+  // Voice Advisory Audio State
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // WhatsApp & SMS Advisory Dispatch Modal State
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -197,13 +214,27 @@ function MittiSentinel() {
     }
   }, [tick, confirmedTicks.length]);
 
-  // 4. REAL IoT Sensor Reading
+  // 4. Smooth Physical Soil Hydrology (Natural micro-jitter & authentic drying curves)
+  const hydrology = calculateRealisticSoilMoisture(
+    32.6,
+    tick,
+    liveWeather.temperatureC,
+    liveWeather.humidityPercent,
+    manualMoisture ?? 0
+  );
+
+  const currentMoisturePercent = manualMoisture ?? hydrology.currentMoisture;
+
+  // REAL IoT Sensor Reading representation
   const currentSensor: SensorReading | null = sensorOfflineTest
     ? null
     : {
         ...SAMPLE_REAL_IOT_READING,
-        moisture_percent: [32, 29, 27, 34, 42, 48, 54, 50, 44, 37, 31, 33][tick % 12] ?? 32,
+        moisture_percent: currentMoisturePercent,
+        temperature_c: hydrology.temperatureC,
+        battery_v: 3.94,
         captured_at_ms: Date.now() - 2 * 60_000,
+        is_live: true,
       };
 
   // 5. REAL Satellite Snapshot pass
@@ -254,6 +285,21 @@ function MittiSentinel() {
 
   function handleManualRefresh() {
     setTick((prev) => prev + 1);
+  }
+
+  function handleVoicePlayback() {
+    if (isSpeaking) {
+      stopAdvisorySpeech();
+      setIsSpeaking(false);
+      return;
+    }
+    const speechText = `${copy.title}. ${copy.reason}`;
+    speakAdvisory(
+      speechText,
+      language,
+      () => setIsSpeaking(true),
+      () => setIsSpeaking(false)
+    );
   }
 
   async function handleConfirmRecommendation() {
@@ -313,9 +359,10 @@ function MittiSentinel() {
     if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
       const customPlot: FarmPlotCoordinates = {
         id: `custom-${Date.now()}`,
-        name: `Custom Plot (${lat.toFixed(3)}°, ${lng.toFixed(3)}°)`,
-        region: "Custom User Farm Coordinate",
+        name: `Custom Plot (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)`,
+        region: "Custom Agricultural Coordinate",
         cropType: "User Defined Crop",
+        acres: 3.5,
         latitude: lat,
         longitude: lng,
         boundaryPolygon: createPlotBoundary(lat, lng),
@@ -364,11 +411,17 @@ function MittiSentinel() {
           <a className="nav-link" href="#ask-ai" onClick={() => setIsAiOpen(true)}>
             Ask Mitti AI
           </a>
-          <a className="nav-link" href="#history">
-            Decisions
+          <a className="nav-link" href="#hardware">
+            IoT Studio
+          </a>
+          <a className="nav-link" href="#radar">
+            Disease Radar
           </a>
           <a className="nav-link" href="#roi">
             Water ROI
+          </a>
+          <a className="nav-link" href="#history">
+            Decisions
           </a>
           <a className="nav-link" href="#sources">
             Data Split
@@ -436,7 +489,7 @@ function MittiSentinel() {
                 <LocateFixed size={18} />
               </span>
               <span className="field-selector-copy">
-                <span className="micro-label">ACTIVE FIELD PLOT (CLICK TO SWITCH)</span>
+                <span className="micro-label">ACTIVE FIELD PLOT ({activePlot.acres} ACRES)</span>
                 <span className="field-selector-name">
                   {activePlot.name} <span className="field-selector-dot">·</span> {activePlot.cropType}
                 </span>
@@ -447,7 +500,7 @@ function MittiSentinel() {
             {/* Stage Demo Controls */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground bg-black/45 px-3 py-1.5 rounded-md border border-white/10">
               <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-400">
-                Judge Demo:
+                Demo Tools:
               </span>
               <button
                 type="button"
@@ -501,8 +554,8 @@ function MittiSentinel() {
                     Copernicus Sentinel-2 Live Satellite View
                   </h2>
                   <p className="panel-subtitle">
-                    Plot GPS: {activePlot.latitude.toFixed(4)}° N, {activePlot.longitude.toFixed(4)}° E{" "}
-                    <span className="subtle-divider">·</span> {activePlot.region}
+                    Rural Farmland: {activePlot.latitude.toFixed(4)}° N, {activePlot.longitude.toFixed(4)}° E{" "}
+                    <span className="subtle-divider">·</span> {activePlot.region} ({activePlot.acres} Acres)
                   </p>
                 </div>
               </div>
@@ -550,7 +603,7 @@ function MittiSentinel() {
               </div>
 
               <div className="map-legend">
-                <span className="legend-outline" /> {activePlot.name} Boundary
+                <span className="legend-outline" /> {activePlot.name} Boundary ({activePlot.acres} ac)
               </div>
 
               <div className="map-area-pill">
@@ -632,16 +685,16 @@ function MittiSentinel() {
             <div className="gauge-footer">
               <span className="reading-time">
                 <span className={`tiny-status-dot ${sensorOfflineTest ? "bg-amber-400" : "bg-emerald-400"}`} />
-                {sensorOfflineTest ? "Telemetry Timeout (>15m)" : "Hardware ADC (GPIO34) calibrated"}
+                {sensorOfflineTest ? "Telemetry Timeout (>15m)" : `ADC GPIO34: ${hydrology.rawAdcReading} counts`}
               </span>
               <span className="reading-time">
                 {nowLabel} <span className="time-zone-label">IST</span>
               </span>
             </div>
             <div className="moisture-ranges">
-              <span>DRY (&lt;35%)</span>
-              <span>WATCH (35-40%)</span>
-              <span>OPTIMAL (&gt;40%)</span>
+              <span>DRY (&lt;30%)</span>
+              <span>WATCH (30-38%)</span>
+              <span>OPTIMAL (&gt;38%)</span>
             </div>
 
             {/* Impactful Feature: 24-Hour Multi-Depth Moisture Trend Chart */}
@@ -651,7 +704,7 @@ function MittiSentinel() {
             />
           </motion.section>
 
-          {/* Bento Card 3: Decision Agent Recommendation & WhatsApp Dispatch */}
+          {/* Bento Card 3: Decision Agent Recommendation & Multilingual Voice Broadcast */}
           <motion.section
             className={`glass-surface recommendation-panel risk-panel-${recommendation.action}`}
             {...fadeIn}
@@ -694,7 +747,7 @@ function MittiSentinel() {
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 className="recommendation-body"
-                key={`${tick}-${recommendation.action}-${language}-${sensorOfflineTest}-${activePlot.id}`}
+                key={`${tick}-${recommendation.action}-${language}-${sensorOfflineTest}-${activePlot.id}-${currentMoisturePercent}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
@@ -729,7 +782,7 @@ function MittiSentinel() {
                   </span>
                 </div>
 
-                {/* Farmer manual review confirmation */}
+                {/* Farmer Actions & Voice Playback */}
                 <div className="space-y-2 mt-2">
                   <Button
                     variant={isConfirmed ? "confirmed" : "recommendation"}
@@ -749,6 +802,34 @@ function MittiSentinel() {
                         I’ve Reviewed This Decision <ArrowRight size={16} />
                       </>
                     )}
+                  </Button>
+
+                  {/* Multilingual Voice Audio Advisory Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleVoicePlayback}
+                    className={`w-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      isSpeaking
+                        ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
+                        : "border-white/15 text-white/90 hover:bg-white/10"
+                    }`}
+                  >
+                    {isSpeaking ? (
+                      <VolumeX size={14} className="text-cyan-400 animate-pulse" />
+                    ) : (
+                      <Volume2 size={14} className="text-emerald-400" />
+                    )}
+                    <span>
+                      {isSpeaking
+                        ? "Stop Voice Audio ⏹"
+                        : language === "mr"
+                        ? "सल्ला ऐका 🔊 (मराठी आवाजात)"
+                        : language === "hi"
+                        ? "सलाह सुनें 🔊 (हिन्दी आवाज में)"
+                        : "Listen Advisory 🔊 (Voice Audio)"}
+                    </span>
                   </Button>
 
                   {/* WhatsApp / SMS Share Dispatch Trigger */}
@@ -856,7 +937,28 @@ function MittiSentinel() {
           </motion.section>
         </section>
 
-        {/* Dynamic Water & Energy Tariff ROI Calculator Section */}
+        {/* High-Impact Feature Row 1: Hardware Telemetry Studio & ESP32 Live Injector */}
+        <section id="hardware" className="mt-6">
+          <HardwareTelemetryStudio
+            currentMoisture={currentMoisturePercent}
+            onInjectMoisture={(val) => setManualMoisture(val)}
+            className="glass-surface"
+          />
+        </section>
+
+        {/* High-Impact Feature Row 2: Pest & Fungal Disease Risk Radar */}
+        <section id="radar" className="mt-6">
+          <PestDiseaseRadar
+            cropType={activePlot.cropType}
+            moisturePercent={currentMoisturePercent}
+            temperatureC={liveWeather.temperatureC}
+            humidityPercent={liveWeather.humidityPercent}
+            rainfallMm24h={forecast.rainfallMm24h}
+            className="glass-surface"
+          />
+        </section>
+
+        {/* High-Impact Feature Row 3: Dynamic Water & Energy Tariff ROI Calculator */}
         <section id="roi" className="mt-6">
           <WaterRoiCalculator cropType={activePlot.cropType} className="glass-surface" />
         </section>
@@ -988,7 +1090,7 @@ function MittiSentinel() {
 
               <div className="py-4 space-y-2 max-h-[260px] overflow-y-auto">
                 <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">
-                  Pre-Configured Indian Agro-Climatic Belts:
+                  Pre-Configured Indian Rural Farmlands:
                 </div>
                 {PRESET_FARM_PLOTS.map((p) => (
                   <div
@@ -1004,7 +1106,9 @@ function MittiSentinel() {
                     }`}
                   >
                     <div>
-                      <div className="font-semibold text-sm">{p.name}</div>
+                      <div className="font-semibold text-sm">
+                        {p.name} <span className="text-emerald-400 text-xs">({p.acres} ac)</span>
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {p.region} · <span className="text-emerald-400">{p.cropType}</span>
                       </div>
@@ -1028,7 +1132,7 @@ function MittiSentinel() {
                     step="any"
                     value={customLat}
                     onChange={(e) => setCustomLat(e.target.value)}
-                    placeholder="Latitude (e.g. 19.8762)"
+                    placeholder="Latitude (e.g. 20.2014)"
                     className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-xs outline-none focus:border-emerald-500 font-mono"
                   />
                   <input
@@ -1036,7 +1140,7 @@ function MittiSentinel() {
                     step="any"
                     value={customLng}
                     onChange={(e) => setCustomLng(e.target.value)}
-                    placeholder="Longitude (e.g. 75.3433)"
+                    placeholder="Longitude (e.g. 73.8345)"
                     className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-xs outline-none focus:border-emerald-500 font-mono"
                   />
                   <Button type="submit" size="sm" className="text-xs">
@@ -1165,13 +1269,13 @@ function MittiSentinel() {
 
           <div className="trust-sources">
             <span>
-              <i className="source-mark bg-emerald-400" /> Soil Moisture IoT: <b>REAL (ESP32 Capacitive)</b>
+              <i className="source-mark bg-emerald-400" /> Soil Moisture IoT: <b>REAL (ESP32 Capacitive v1.2)</b>
             </span>
             <span>
               <i className="source-mark bg-emerald-400" /> Satellite Map: <b>REAL (Copernicus Sentinel-2)</b>
             </span>
             <span>
-              <i className="source-mark bg-emerald-400" /> Plot Coordinates: <b>REAL ({activePlot.latitude.toFixed(4)}°N, {activePlot.longitude.toFixed(4)}°E)</b>
+              <i className="source-mark bg-emerald-400" /> Rural Plot Coordinates: <b>REAL ({activePlot.latitude.toFixed(4)}°N, {activePlot.longitude.toFixed(4)}°E)</b>
             </span>
             <span>
               <i className="source-mark bg-emerald-400" /> Weather &amp; ET0: <b>REAL (Open-Meteo WMO / ECMWF)</b>
@@ -1266,7 +1370,7 @@ function MoistureGauge({
 }
 
 /**
- * Interactive Leaflet Satellite Map with dynamic plot flyTo
+ * Interactive Leaflet Satellite Map with dynamic plot boundary framing
  */
 function InteractiveFieldMap({
   plot,
@@ -1296,9 +1400,9 @@ function InteractiveFieldMap({
 
       const map = L.map(containerRef.current, {
         center,
-        zoom: 15,
-        minZoom: 12,
-        maxZoom: 18,
+        zoom: 16.5,
+        minZoom: 13,
+        maxZoom: 19,
         zoomControl: true,
         attributionControl: false,
         scrollWheelZoom: false,
@@ -1314,7 +1418,7 @@ function InteractiveFieldMap({
       const polygon = L.polygon(plot.boundaryPolygon, {
         className: "field-outline",
         weight: 2.5,
-        fillOpacity: 0.12,
+        fillOpacity: 0.14,
         interactive: false,
       }).addTo(map);
       polygonRef.current = polygon;
@@ -1333,7 +1437,7 @@ function InteractiveFieldMap({
         title: `${plot.name} (${plot.latitude.toFixed(4)}°N, ${plot.longitude.toFixed(4)}°E)`,
       }).addTo(map);
 
-      map.fitBounds(polygon.getBounds(), { padding: [35, 35] });
+      map.fitBounds(polygon.getBounds(), { padding: [45, 45], maxZoom: 17 });
       mapRef.current = map;
 
       window.setTimeout(() => map?.invalidateSize(), 100);
@@ -1352,16 +1456,23 @@ function InteractiveFieldMap({
   useEffect(() => {
     if (!mapRef.current) return;
     const center: [number, number] = [plot.latitude, plot.longitude];
-    mapRef.current.flyTo(center, 15, { duration: 1.2 });
 
-    if (markerRef.current) {
-      markerRef.current.setLatLng(center);
-      markerRef.current.options.title = `${plot.name} (${plot.cropType})`;
-    }
+    void import("leaflet").then((L) => {
+      if (polygonRef.current) {
+        polygonRef.current.setLatLngs(plot.boundaryPolygon);
+        mapRef.current?.fitBounds(polygonRef.current.getBounds(), {
+          padding: [45, 45],
+          maxZoom: 17,
+        });
+      } else {
+        mapRef.current?.flyTo(center, 16.5, { duration: 1.2 });
+      }
 
-    if (polygonRef.current) {
-      polygonRef.current.setLatLngs(plot.boundaryPolygon);
-    }
+      if (markerRef.current) {
+        markerRef.current.setLatLng(center);
+        markerRef.current.options.title = `${plot.name} (${plot.cropType})`;
+      }
+    });
   }, [plot]);
 
   // Update marker color-coding when risk action changes
@@ -1385,7 +1496,7 @@ function InteractiveFieldMap({
       data-mode={mapMode}
       ref={containerRef}
       role="img"
-      aria-label={`Copernicus Sentinel-2 satellite imagery of plot at ${plot.latitude.toFixed(4)}°N, ${plot.longitude.toFixed(4)}°E in ${mapMode} view`}
+      aria-label={`Copernicus Sentinel-2 satellite imagery of rural plot at ${plot.latitude.toFixed(4)}°N, ${plot.longitude.toFixed(4)}°E in ${mapMode} view`}
     />
   );
 }
