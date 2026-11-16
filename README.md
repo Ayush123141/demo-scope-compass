@@ -29,10 +29,11 @@ Judges and evaluators trust teams that are transparent about what is measured ve
 |---|---|---|
 | **Soil Moisture Telemetry** | **100% REAL** | Capacitive Soil Moisture Sensor v1.2 + ESP32 microcontroller ADC (GPIO34) reporting Volumetric Water Content (VWC %) via HTTP REST / Supabase. |
 | **Satellite Imagery** | **100% REAL** | Copernicus Sentinel-2 L2A high-resolution optical imagery with ~5-day orbital revisit cadence; ISRO Bhuvan Open WMS backup. |
-| **Plot Coordinates** | **100% REAL** | Active plot coordinates (`19.8762° N, 75.3433° E`, Chhatrapati Sambhajinagar, Maharashtra) + multi-plot regional switcher (Nashik, Vidarbha, Pune). |
-| **24h Rainfall Forecast** | **SIMULATED** | Seeded, time-varying trigonometric weather engine with diurnal oscillation (visibly tagged with amber `SIMULATED` badge). |
+| **Plot Coordinates** | **100% REAL** | Active plot coordinates (`19.8762° N, 75.3433° E`, Chhatrapati Sambhajinagar, Maharashtra) + multi-plot regional switcher (Nashik, Vidarbha, Pune, Punjab). |
+| **Meteorological Weather** | **100% REAL** | Live temperature, humidity, wind, 24h precipitation, and FAO-56 crop evapotranspiration (ET0) via Open-Meteo WMO / ECMWF API. |
 | **Yield Impact Estimate** | **SIMULATED** | Dynamic vegetative water deficit model (-15% to +10%) correlating soil water balance with evaporative demand. |
 | **Decision Logic** | **HONEST RULE-BASED** | Transparent heuristic correlation matrix. **Not** a certified agronomy model; satellite is for visual grounding. |
+| **Cloud Persistence & Auth**| **100% REAL** | Supabase PostgreSQL database + Supabase Authentication + Row Level Security (RLS). |
 
 ---
 
@@ -66,10 +67,14 @@ Judges and evaluators trust teams that are transparent about what is measured ve
 - 🛰️ **Interactive Leaflet Satellite Map**: Centered on actual plot coordinates with high-resolution satellite tiles, live polygon boundaries, and a pulsating status halo (green = steady, amber = watch, red = urgent action).
 - 🌿 **True-Color vs. NDVI Vegetation View**: Instant toggle between optical imagery and chlorophyll absorption false-color vegetation index.
 - ⏱️ **5-Day Orbital Pass Time-Scrubber**: Slider navigating historical Sentinel-2 orbital passes (20 Oct, 25 Oct, 30 Oct, 04 Nov, 09 Nov, 14 Nov).
-- 💧 **Animated Framer Motion Radial Gauge**: Easing needle dial calibrated for Volumetric Water Content (VWC 0–100%).
+- 💧 **Animated Framer Motion Radial Gauge & 24h Root-Zone Profile**: Easing needle dial calibrated for Volumetric Water Content (VWC 0–100%) paired with a multi-depth Recharts 24-hour topsoil (0-15cm) vs taproot (15-45cm) moisture dynamic curve.
+- 🌦️ **Real Open-Meteo Meteorological Engine**: Live ambient temperature, relative humidity, wind speed, precipitation probability, and FAO-56 Penman-Monteith crop evapotranspiration (ET0).
+- 📱 **WhatsApp & Kisaan SMS Advisory Dispatch**: Instant 1-click broadcast of agronomic recommendations to farm laborers or local Krishi Vigyan Kendra (KVK) formatted in English, Hindi, or Marathi.
+- ⚡ **Interactive Water & Electricity Tariff ROI Calculator**: Dynamic economic model calculating groundwater saved (liters), electricity saved (kWh & ₹), and diesel offset for 3–10 HP farm pumps.
+- 🔐 **Supabase Farmer Authentication & Device Hub**: Dual-mode authentication supporting 1-click Judge Demo Profiles (Ramesh Patil, Harpreet Singh, Santosh Jadhav) alongside real Supabase Email/Password and Registration with RLS protection.
 - 🌐 **Trilingual Farmer Accessibility**: Instant recommendation translation across English, Hindi (हिन्दी), and Marathi (मराठी).
 - 🛡️ **Graceful Degradation ("Knows What It Doesn't Know")**: When sensor telemetry is stale (>15 min) or satellite data is unreachable, the agent drops confidence to **0%** and withholds recommendations instead of hallucinating.
-- 💬 **Ask Mitti AI (Google Gemini Flash)**: Multilingual interactive crop copilot grounded in live sensor and satellite context.
+- 💬 **Ask Mitti AI (Google Gemini 2.5 Flash)**: Multilingual interactive crop copilot grounded in live sensor, satellite, and Open-Meteo context.
 - 🍂 **Atmospheric Ambient Animation**: Powered by the trending `falling-leaves` canvas engine with an instant demo toggle.
 
 ---

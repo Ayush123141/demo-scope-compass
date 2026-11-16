@@ -24,11 +24,14 @@ import {
   RefreshCw,
   Satellite,
   Send,
+  Share2,
   ShieldCheck,
   Sparkles,
   Sun,
+  Thermometer,
   User,
   Waves,
+  Wind,
   Wifi,
   WifiOff,
   Zap,
@@ -60,8 +63,23 @@ import {
 } from "@/lib/decision-agent";
 import {
   isSupabaseConfigured,
+  getCurrentFarmerSession,
+  fetchRecentRecommendations,
+  saveRecommendationToSupabase,
   confirmRecommendationInSupabase,
+  type FarmerProfile,
+  type PersistedRecommendation,
+  DEFAULT_GUEST_FARMER,
 } from "@/lib/supabase-client";
+import {
+  fetchLivePlotWeather,
+  type LiveWeatherData,
+  DEFAULT_FALLBACK_WEATHER,
+} from "@/lib/weather-service";
+import { SoilMoistureTrendChart } from "@/components/SoilMoistureTrendChart";
+import { AdvisoryShareModal } from "@/components/AdvisoryShareModal";
+import { FarmerAuthModal } from "@/components/FarmerAuthModal";
+import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
 import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
@@ -78,13 +96,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Real IoT soil moisture telemetry fused with Copernicus Sentinel-2 satellite imagery and Google Gemini AI copilot support.",
+          "Real IoT soil moisture telemetry fused with Copernicus Sentinel-2 satellite imagery, Open-Meteo weather models, and Google Gemini AI copilot support.",
       },
       { property: "og:title", content: "Mitti Sentinel — Real Field Intelligence, Honest AI" },
       {
         property: "og:description",
         content:
-          "Real IoT soil moisture telemetry fused with Copernicus Sentinel-2 satellite imagery and Google Gemini AI copilot support.",
+          "Real IoT soil moisture telemetry fused with Copernicus Sentinel-2 satellite imagery, Open-Meteo weather models, and Google Gemini AI copilot support.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -118,15 +136,18 @@ function MittiSentinel() {
   const [customLat, setCustomLat] = useState("");
   const [customLng, setCustomLng] = useState("");
 
-  // Lightweight Farmer Authentication State
+  // Supabase Authentication & Farmer Profile State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [farmerUser, setFarmerUser] = useState({
-    name: "Ramesh Patil",
-    kisanId: "MH-FAR-4192",
-    mobile: "+91 98221 44021",
-    isGuest: true,
-  });
-  const [mobileInput, setMobileInput] = useState("");
+  const [farmerUser, setFarmerUser] = useState<FarmerProfile>(DEFAULT_GUEST_FARMER);
+
+  // Live Open-Meteo Weather State
+  const [liveWeather, setLiveWeather] = useState<LiveWeatherData>(DEFAULT_FALLBACK_WEATHER);
+
+  // WhatsApp & SMS Advisory Dispatch Modal State
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Supabase Database Synchronized Recommendations History
+  const [supabaseHistory, setSupabaseHistory] = useState<PersistedRecommendation[]>([]);
 
   // "Ask Mitti AI" (Google Gemini Integration) State
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -134,7 +155,49 @@ function MittiSentinel() {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-  // 1. REAL IoT Sensor Reading
+  // 1. Check existing Supabase user session on app mount
+  useEffect(() => {
+    getCurrentFarmerSession().then(({ user }) => {
+      if (user) {
+        const displayName =
+          user.user_metadata?.display_name || user.email?.split("@")[0] || "Registered Farmer";
+        const userKisan =
+          user.user_metadata?.kisan_id || "IND-KISAN-" + user.id.slice(0, 4).toUpperCase();
+        setFarmerUser({
+          id: user.id,
+          name: displayName,
+          kisanId: userKisan,
+          email: user.email,
+          deviceId: "MITTI-ESP32-01",
+          isGuest: false,
+        });
+      }
+    });
+  }, []);
+
+  // 2. Fetch Real Meteorological Data whenever active plot coordinates change
+  useEffect(() => {
+    let isMounted = true;
+    fetchLivePlotWeather(activePlot.latitude, activePlot.longitude).then((weather) => {
+      if (isMounted) {
+        setLiveWeather(weather);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [activePlot.latitude, activePlot.longitude, tick]);
+
+  // 3. Fetch past verified recommendations from Supabase
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      fetchRecentRecommendations(5).then((data) => {
+        setSupabaseHistory(data);
+      });
+    }
+  }, [tick, confirmedTicks.length]);
+
+  // 4. REAL IoT Sensor Reading
   const currentSensor: SensorReading | null = sensorOfflineTest
     ? null
     : {
@@ -143,13 +206,18 @@ function MittiSentinel() {
         captured_at_ms: Date.now() - 2 * 60_000,
       };
 
-  // 2. REAL Satellite Snapshot pass
+  // 5. REAL Satellite Snapshot pass
   const currentPass: SatellitePass = SATELLITE_PASS_HISTORY[sceneIndex] ?? SATELLITE_PASS_HISTORY[0]!;
 
-  // 3. SIMULATED Forecast & Yield Signals
-  const forecast: SimulatedSignals = generateSimulatedSignals(tick);
+  // 6. Forecast & Yield Signals (Fusing Real Open-Meteo Weather with dynamic model)
+  const baseSimulated = generateSimulatedSignals(tick);
+  const forecast: SimulatedSignals = {
+    ...baseSimulated,
+    rainfallMm24h: liveWeather.isLive ? liveWeather.rainfallMm24h : baseSimulated.rainfallMm24h,
+    evapotranspirationMmDay: liveWeather.isLive ? liveWeather.evapotranspirationMmDay : baseSimulated.evapotranspirationMmDay,
+  };
 
-  // 4. Decision Agent Core Evaluation
+  // 7. Decision Agent Core Evaluation
   const recommendation: AgentRecommendation = evaluateFieldConditions({
     sensor: currentSensor,
     satellite: currentPass,
@@ -191,8 +259,24 @@ function MittiSentinel() {
   async function handleConfirmRecommendation() {
     if (isConfirmed || recommendation.sourceLabel === "Data unavailable") return;
     setConfirmedTicks((prev) => [...prev, tick]);
-    if (isSupabaseConfigured && recommendation.id) {
-      await confirmRecommendationInSupabase(recommendation.id);
+
+    if (isSupabaseConfigured) {
+      // 1. Save recommendation record to Supabase
+      const savedId = await saveRecommendationToSupabase(
+        recommendation,
+        currentSensor ? "00000000-0000-0000-0000-000000000001" : undefined
+      );
+
+      // 2. Mark confirmed in Supabase
+      if (savedId) {
+        await confirmRecommendationInSupabase(savedId);
+      } else if (recommendation.id) {
+        await confirmRecommendationInSupabase(recommendation.id);
+      }
+
+      // 3. Refresh live history from database
+      const refreshed = await fetchRecentRecommendations(5);
+      setSupabaseHistory(refreshed);
     }
   }
 
@@ -283,6 +367,9 @@ function MittiSentinel() {
           <a className="nav-link" href="#history">
             Decisions
           </a>
+          <a className="nav-link" href="#roi">
+            Water ROI
+          </a>
           <a className="nav-link" href="#sources">
             Data Split
           </a>
@@ -298,14 +385,22 @@ function MittiSentinel() {
             <span>Mitti AI Copilot</span>
           </button>
 
+          {/* Farmer Profile & Supabase Auth Trigger */}
           <button
             type="button"
             onClick={() => setIsAuthModalOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-xs font-medium cursor-pointer"
-            title="Farmer Account & IoT Device Pairing"
+            title="Farmer Account & Supabase Device Hub"
           >
-            <span className="avatar-chip">{farmerUser.name[0]}</span>
-            <span className="hidden sm:inline text-white/90">{farmerUser.name}</span>
+            <span className={`avatar-chip ${farmerUser.isGuest ? "bg-amber-500/20 text-amber-300" : "bg-emerald-500/20 text-emerald-300"}`}>
+              {farmerUser.name[0]}
+            </span>
+            <div className="text-left hidden sm:block">
+              <span className="text-white/90 text-xs block leading-tight">{farmerUser.name}</span>
+              <span className="text-[10px] text-emerald-400/80 font-mono block leading-tight">
+                {farmerUser.isGuest ? "Judge Demo" : "Verified Kisan"}
+              </span>
+            </div>
           </button>
         </div>
       </header>
@@ -316,15 +411,15 @@ function MittiSentinel() {
           <div className="intro-copy">
             <div className="eyebrow">
               <span className="eyebrow-line" />
-              INTELLIGENT FIELD SENTINEL <span className="eyebrow-separator">/</span> MAHARASHTRA
+              INTELLIGENT FIELD SENTINEL <span className="eyebrow-separator">/</span> MAHARASHTRA &amp; PUNJAB
             </div>
             <h1>
               Ground truth on <span>your soil.</span>
               <br className="desktop-break" /> Spaceborne clarity above.
             </h1>
             <p>
-              Combining real physical IoT soil capacitive telemetry with Copernicus Sentinel-2 satellite passes
-              into honest, transparent decision support for Indian farmers.
+              Combining real physical IoT soil capacitive telemetry with Copernicus Sentinel-2 satellite passes,
+              Open-Meteo meteorological models, and Google Gemini AI into transparent decision support for Indian farmers.
             </p>
           </div>
 
@@ -349,7 +444,7 @@ function MittiSentinel() {
               <ChevronDown size={16} className="field-selector-chevron" />
             </div>
 
-            {/* Stage Demo Failure-Path Test Controls */}
+            {/* Stage Demo Controls */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground bg-black/45 px-3 py-1.5 rounded-md border border-white/10">
               <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-400">
                 Judge Demo:
@@ -379,6 +474,14 @@ function MittiSentinel() {
               >
                 <Leaf size={12} className="inline mr-1" />
                 {leavesEnabled ? "Leaves: On" : "Leaves: Off"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer"
+                title="Dispatch WhatsApp / SMS Advisory"
+              >
+                <Share2 size={12} className="inline mr-1" /> Share Advisory
               </button>
             </div>
           </div>
@@ -487,7 +590,7 @@ function MittiSentinel() {
             </div>
           </motion.section>
 
-          {/* Bento Card 2: Soil Moisture IoT Dial */}
+          {/* Bento Card 2: Soil Moisture IoT Dial & Multi-Depth 24h Profile */}
           <motion.section className="glass-surface moisture-panel" {...fadeIn} aria-labelledby="moisture-title">
             <div className="panel-heading">
               <div className="panel-title-group">
@@ -540,9 +643,15 @@ function MittiSentinel() {
               <span>WATCH (35-40%)</span>
               <span>OPTIMAL (&gt;40%)</span>
             </div>
+
+            {/* Impactful Feature: 24-Hour Multi-Depth Moisture Trend Chart */}
+            <SoilMoistureTrendChart
+              currentMoisture={currentSensor?.moisture_percent ?? 32}
+              className="mt-4"
+            />
           </motion.section>
 
-          {/* Bento Card 3: Decision Agent Recommendation */}
+          {/* Bento Card 3: Decision Agent Recommendation & WhatsApp Dispatch */}
           <motion.section
             className={`glass-surface recommendation-panel risk-panel-${recommendation.action}`}
             {...fadeIn}
@@ -616,30 +725,44 @@ function MittiSentinel() {
                     {recommendation.sourceLabel}:{" "}
                     {sensorOfflineTest
                       ? "Sensor telemetry missing — safe graceful degradation"
-                      : "Live IoT moisture + Sentinel-2 satellite pass"}
+                      : "Live IoT moisture + Sentinel-2 pass + Open-Meteo weather"}
                   </span>
                 </div>
 
                 {/* Farmer manual review confirmation */}
-                <Button
-                  variant={isConfirmed ? "confirmed" : "recommendation"}
-                  size="default"
-                  onClick={handleConfirmRecommendation}
-                  disabled={isConfirmed || recommendation.confidencePercent === 0}
-                  className="recommendation-button"
-                >
-                  {isConfirmed ? (
-                    <>
-                      <Check size={16} /> Farmer Confirmed (Saved to Supabase)
-                    </>
-                  ) : recommendation.confidencePercent === 0 ? (
-                    <>Withheld: Verify Field Directly</>
-                  ) : (
-                    <>
-                      I’ve Reviewed This Decision <ArrowRight size={16} />
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-2 mt-2">
+                  <Button
+                    variant={isConfirmed ? "confirmed" : "recommendation"}
+                    size="default"
+                    onClick={handleConfirmRecommendation}
+                    disabled={isConfirmed || recommendation.confidencePercent === 0}
+                    className="recommendation-button w-full"
+                  >
+                    {isConfirmed ? (
+                      <>
+                        <Check size={16} /> Farmer Confirmed (Saved to Supabase)
+                      </>
+                    ) : recommendation.confidencePercent === 0 ? (
+                      <>Withheld: Verify Field Directly</>
+                    ) : (
+                      <>
+                        I’ve Reviewed This Decision <ArrowRight size={16} />
+                      </>
+                    )}
+                  </Button>
+
+                  {/* WhatsApp / SMS Share Dispatch Trigger */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="w-full text-xs flex items-center justify-center gap-1.5 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
+                  >
+                    <MessageSquare size={13} />
+                    Dispatch Advisory via WhatsApp / SMS
+                  </Button>
+                </div>
+
                 <p className="no-control-note">
                   Honest safety guarantee: Only farmer confirmation records decision. Does NOT actuate valves autonomously.
                 </p>
@@ -647,7 +770,7 @@ function MittiSentinel() {
             </AnimatePresence>
           </motion.section>
 
-          {/* Bento Card 4: Crop Outlook & Simulated Weather Signals */}
+          {/* Bento Card 4: Crop Outlook & Real Meteorological Signals */}
           <motion.section className="glass-surface health-panel" {...fadeIn} aria-labelledby="health-title">
             <div className="panel-heading">
               <div className="panel-title-group">
@@ -656,9 +779,15 @@ function MittiSentinel() {
                 </span>
                 <div>
                   <h2 id="health-title" className="panel-title">
-                    Crop Outlook &amp; Weather Signals
+                    Crop Outlook &amp; Weather Engine
                   </h2>
-                  <p className="panel-subtitle">Simulated engine · time-varying mock</p>
+                  <p className="panel-subtitle">
+                    {liveWeather.isLive ? (
+                      <span className="text-emerald-400 font-semibold">Real Open-Meteo WMO Model</span>
+                    ) : (
+                      "Simulated engine fallback"
+                    )}
+                  </p>
                 </div>
               </div>
               <span className="trend-chip">
@@ -682,25 +811,54 @@ function MittiSentinel() {
               />
             </div>
 
-            <div className="health-footer">
-              <span>
-                <CloudRain size={15} /> Rain Outlook (Next 24h)
-              </span>
-              <strong>
-                {forecast.rainfallMm24h.toFixed(1)} mm{" "}
-                <span className="text-[10px] text-amber-400 font-normal ml-1">SIMULATED</span>
-              </strong>
-            </div>
-
-            {/* Water & Power ROI Impact Subcard */}
-            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/80">
-              <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                <Zap size={14} />
-                <span>14,200 L Saved This Week</span>
+            {/* Live Weather Metrics Grid */}
+            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/10 text-xs">
+              <div className="p-2 rounded bg-black/30 border border-white/5">
+                <div className="text-white/60 text-[10px] flex items-center gap-1">
+                  <CloudRain size={12} className="text-blue-400" /> Rain Outlook (24h)
+                </div>
+                <div className="text-sm font-semibold text-white/95 mt-0.5">
+                  {forecast.rainfallMm24h.toFixed(1)} mm
+                  <span className={`text-[10px] font-normal ml-1.5 ${liveWeather.isLive ? "text-emerald-400" : "text-amber-400"}`}>
+                    {liveWeather.isLive ? "REAL" : "SIM"}
+                  </span>
+                </div>
               </div>
-              <div className="text-white/60">~₹185 Power Tariff Saved</div>
+
+              <div className="p-2 rounded bg-black/30 border border-white/5">
+                <div className="text-white/60 text-[10px] flex items-center gap-1">
+                  <Thermometer size={12} className="text-orange-400" /> Temperature &amp; Sky
+                </div>
+                <div className="text-sm font-semibold text-white/95 mt-0.5">
+                  {liveWeather.temperatureC}°C · {liveWeather.weatherDescription}
+                </div>
+              </div>
+
+              <div className="p-2 rounded bg-black/30 border border-white/5">
+                <div className="text-white/60 text-[10px] flex items-center gap-1">
+                  <Waves size={12} className="text-cyan-400" /> Crop ET0 Water Loss
+                </div>
+                <div className="text-sm font-semibold text-white/95 mt-0.5">
+                  {liveWeather.evapotranspirationMmDay} mm/day
+                  <span className="text-[10px] text-emerald-400 font-normal ml-1.5">FAO-56</span>
+                </div>
+              </div>
+
+              <div className="p-2 rounded bg-black/30 border border-white/5">
+                <div className="text-white/60 text-[10px] flex items-center gap-1">
+                  <Wind size={12} className="text-purple-400" /> Humidity &amp; Wind
+                </div>
+                <div className="text-sm font-semibold text-white/95 mt-0.5">
+                  {liveWeather.humidityPercent}% · {liveWeather.windSpeedKmh} km/h
+                </div>
+              </div>
             </div>
           </motion.section>
+        </section>
+
+        {/* Dynamic Water & Energy Tariff ROI Calculator Section */}
+        <section id="roi" className="mt-6">
+          <WaterRoiCalculator cropType={activePlot.cropType} className="glass-surface" />
         </section>
 
         {/* Ask Mitti AI Copilot Drawer (Google Gemini 2.5 Flash) */}
@@ -725,7 +883,7 @@ function MittiSentinel() {
                       </span>
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Agronomic copilot grounded in live IoT telemetry and Sentinel-2 pass
+                      Agronomic copilot grounded in live IoT telemetry, Sentinel-2, and Open-Meteo
                     </p>
                   </div>
                 </div>
@@ -890,100 +1048,27 @@ function MittiSentinel() {
           </div>
         )}
 
-        {/* Lightweight Farmer Authentication Modal */}
-        {isAuthModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-surface w-full max-w-md p-6 rounded-xl border border-white/15 shadow-2xl relative"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <User size={18} className="text-amber-400" />
-                  <h3 className="font-semibold text-base">Farmer Profile &amp; Device Pairing</h3>
-                </div>
-                <button
-                  onClick={() => setIsAuthModalOpen(false)}
-                  className="text-white/60 hover:text-white p-1 rounded-md cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
+        {/* Real Supabase Farmer Authentication Modal */}
+        <FarmerAuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          farmer={farmerUser}
+          onUpdateFarmer={setFarmerUser}
+        />
 
-              <div className="py-4 space-y-4 text-xs">
-                {/* Active Mode */}
-                <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Active Session Mode:</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold">
-                      {farmerUser.isGuest ? "Judge / Demo Account" : "Registered Farmer"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Kisan Card ID:</span>
-                    <span className="font-mono text-white/90">{farmerUser.kisanId}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Assigned IoT Node:</span>
-                    <span className="font-mono text-emerald-400 font-semibold">MITTI-ESP32-01</span>
-                  </div>
-                </div>
-
-                {/* Telemetry Health */}
-                <div className="p-3 rounded-lg bg-black/40 border border-white/10 space-y-1.5 text-white/70">
-                  <div className="text-[10px] uppercase font-semibold text-white/90 tracking-wider">
-                    Paired Node Diagnostics:
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Battery Voltage:</span>
-                    <span className="font-mono text-emerald-400">3.94 V (Healthy)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>WiFi RSSI:</span>
-                    <span className="font-mono text-emerald-400">-62 dBm (Strong)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Firmware Version:</span>
-                    <span className="font-mono">v1.2.4-capacitive</span>
-                  </div>
-                </div>
-
-                {/* Phone Login Form */}
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (mobileInput.trim()) {
-                      setFarmerUser({
-                        name: "Farmer Ramesh",
-                        kisanId: "MH-FAR-4192",
-                        mobile: mobileInput,
-                        isGuest: false,
-                      });
-                      setIsAuthModalOpen(false);
-                    }
-                  }}
-                  className="space-y-2 pt-2"
-                >
-                  <label className="text-[11px] text-muted-foreground block">
-                    Switch to Registered Mobile / Kisan ID:
-                  </label>
-                  <input
-                    type="tel"
-                    value={mobileInput}
-                    onChange={(e) => setMobileInput(e.target.value)}
-                    placeholder="Enter 10-digit mobile number"
-                    className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-xs outline-none focus:border-amber-400 font-mono"
-                  />
-                  <Button type="submit" className="w-full text-xs">
-                    Verify &amp; Switch Account
-                  </Button>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
+        {/* WhatsApp & SMS Advisory Dispatch Modal */}
+        <AdvisoryShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          plotName={activePlot.name}
+          cropType={activePlot.cropType}
+          moisturePercent={currentSensor?.moisture_percent ?? 0}
+          recommendationTitle={copy.title}
+          recommendationReason={copy.reason}
+          confidencePercent={recommendation.confidencePercent}
+          rainfallForecastMm={forecast.rainfallMm24h}
+          language={language}
+        />
 
         {/* Decision History Timeline */}
         <motion.section id="history" className="history-section" {...fadeIn} aria-labelledby="history-title">
@@ -1002,6 +1087,7 @@ function MittiSentinel() {
           </div>
 
           <div className="glass-surface history-strip">
+            {/* Live active recommendation item */}
             <div className="history-row history-row-featured">
               <span className="history-marker">
                 <ArrowDownRight size={16} />
@@ -1019,41 +1105,54 @@ function MittiSentinel() {
               <span className="history-time">{nowLabel}</span>
             </div>
 
-            <div className="history-row">
-              <span className="history-marker history-marker-quiet">
-                <Check size={15} />
-              </span>
-              <div className="history-main">
-                <div className="history-event-title">
-                  Sentinel-2 Pass Ingestion
-                  <span className="history-demo-label">COPERNICUS</span>
+            {/* Supabase Persisted Decision History Rows */}
+            {supabaseHistory.length > 0 ? (
+              supabaseHistory.map((item) => (
+                <div className="history-row" key={item.id}>
+                  <span className="history-marker history-marker-reviewed">
+                    <Check size={15} />
+                  </span>
+                  <div className="history-main">
+                    <div className="history-event-title">
+                      {item.action === "irrigate_now"
+                        ? "Irrigate Now"
+                        : item.action === "hold_off"
+                        ? "Hold Off Irrigation"
+                        : item.action === "protect_crop"
+                        ? "Protect Crop"
+                        : "No Action Needed"}
+                      <span className="history-demo-label">SUPABASE DB</span>
+                    </div>
+                    <div className="history-event-reason">
+                      {item.reason_en}
+                    </div>
+                  </div>
+                  <span className="history-status history-status-reviewed">
+                    {item.confirmed ? "CONFIRMED" : "RECORDED"}
+                  </span>
+                  <span className="history-time">
+                    {new Date(item.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 </div>
-                <div className="history-event-reason">
-                  Orbit L2A multi-spectral scene retrieved for plot {activePlot.latitude.toFixed(4)}°N, {activePlot.longitude.toFixed(4)}°E · 0.0% cloud interference.
-                </div>
-              </div>
-              <span className="history-status history-status-muted">PROCESSED</span>
-              <span className="history-time">05:41</span>
-            </div>
-
-            {confirmedTicks.slice(-3).reverse().map((t, idx) => (
-              <div className="history-row" key={`${t}-${idx}`}>
-                <span className="history-marker history-marker-reviewed">
+              ))
+            ) : (
+              <div className="history-row">
+                <span className="history-marker history-marker-quiet">
                   <Check size={15} />
                 </span>
                 <div className="history-main">
                   <div className="history-event-title">
-                    {farmerUser.name} confirmed recommendation
-                    <span className="history-demo-label">PERSISTED</span>
+                    Sentinel-2 Pass Ingestion
+                    <span className="history-demo-label">COPERNICUS</span>
                   </div>
                   <div className="history-event-reason">
-                    Manual sign-off recorded. Zero autonomous valve command triggered.
+                    Orbit L2A multi-spectral scene retrieved for plot {activePlot.latitude.toFixed(4)}°N, {activePlot.longitude.toFixed(4)}°E · 0.0% cloud interference.
                   </div>
                 </div>
-                <span className="history-status history-status-reviewed">REVIEWED</span>
-                <span className="history-time">{idx === 0 ? "RECENT" : "EARLIER"}</span>
+                <span className="history-status history-status-muted">PROCESSED</span>
+                <span className="history-time">05:41</span>
               </div>
-            ))}
+            )}
           </div>
         </motion.section>
 
@@ -1075,7 +1174,7 @@ function MittiSentinel() {
               <i className="source-mark bg-emerald-400" /> Plot Coordinates: <b>REAL ({activePlot.latitude.toFixed(4)}°N, {activePlot.longitude.toFixed(4)}°E)</b>
             </span>
             <span>
-              <i className="source-mark source-mark-amber" /> 24h Rainfall: <b>SIMULATED (Dynamic Sine Model)</b>
+              <i className="source-mark bg-emerald-400" /> Weather &amp; ET0: <b>REAL (Open-Meteo WMO / ECMWF)</b>
             </span>
             <span>
               <i className="source-mark source-mark-amber" /> Yield Estimate: <b>SIMULATED (Water Deficit Model)</b>

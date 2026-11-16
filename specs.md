@@ -11,15 +11,21 @@ Judges and evaluators trust transparency. Mitti Sentinel strictly distinguishes 
   - **Active Test Device:** `MITTI-ESP32-01`.
 
 - **REAL: Live Satellite Imagery of Farm Plot**
-  - **Target Coordinates:** `19.8762° N, 75.3433° E` (Chhatrapati Sambhajinagar / Marathwada agrarian plot, Maharashtra, India).
+  - **Target Coordinates:** `19.8762° N, 75.3433° E` (Chhatrapati Sambhajinagar / Marathwada agrarian plot, Maharashtra, India) + multi-plot selector (Nashik, Vidarbha, Pune, Punjab).
   - **Primary Provider:** Sentinel Hub (Copernicus Sentinel-2 L2A) True-Color (RGB Bands B04, B03, B02) and NDVI Vegetation Index (Bands B08, B04).
   - **Fallback / Public WMS Provider:** ISRO Bhuvan Web Map Service (`https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms`) thematic imagery & Copernicus / Sentinel-2 cloudless real satellite raster tiles (`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`).
   - **Multi-temporal Time-Scrubber:** Sentinel-2 ~5-day orbital revisit captures (20 Oct, 25 Oct, 30 Oct, 04 Nov, 09 Nov, 14 Nov).
 
-- **SIMULATED (Time-Varying & Dynamic Mock Engine):**
-  - **Rainfall 24h Forecast:** Varies plausibly over time (0–35 mm) using diurnal trigonometric perturbation, seeded for predictable demo replay.
+- **REAL: Live Meteorological & Evapotranspiration API**
+  - **Provider:** Open-Meteo WMO / ECMWF open weather models.
+  - **Parameters:** Real-time 2m temperature (°C), relative humidity (%), wind speed (km/h), precipitation probability, and FAO-56 Reference Evapotranspiration (ET0 mm/day).
+
+- **REAL: Cloud Database & Supabase Authentication**
+  - **Provider:** Supabase PostgreSQL with Row Level Security (RLS).
+  - **Features:** 1-Click Judge Demo profiles + Supabase Email/Password authentication & new plot registration.
+
+- **SIMULATED (Dynamic Mock Engine):**
   - **Yield-Impact Estimate:** Real-time projected percentage delta (-15% to +10%) correlated with soil water depletion vs. evaporative demand.
-  - **Historical Trend Lines:** 7-day soil moisture retention curve.
   - **UI Trust Signal:** Every simulated item is visibly tagged with an amber badge `SIMULATED` so judges and farmers know what is measured vs. modeled.
 
 ---
