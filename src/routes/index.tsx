@@ -88,7 +88,6 @@ import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
 import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
 import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
-import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
 
 type Language = "en" | "hi" | "mr";
@@ -136,7 +135,6 @@ function MittiSentinel() {
   const [mapMode, setMapMode] = useState<MapMode>("true");
   const [language, setLanguage] = useState<Language>("en");
   const [sensorOfflineTest, setSensorOfflineTest] = useState(false);
-  const [leavesEnabled, setLeavesEnabled] = useState(true);
   const [confirmedTicks, setConfirmedTicks] = useState<number[]>([]);
   const [nowLabel, setNowLabel] = useState("08:00");
   const reduceMotion = useReducedMotion();
@@ -177,14 +175,14 @@ function MittiSentinel() {
     getCurrentFarmerSession().then(({ user }) => {
       if (user) {
         const displayName =
-          user.user_metadata?.display_name || user.email?.split("@")[0] || "Registered Farmer";
+          user.user_metadata?.["display_name"] || user.email?.split("@")[0] || "Registered Farmer";
         const userKisan =
-          user.user_metadata?.kisan_id || "IND-KISAN-" + user.id.slice(0, 4).toUpperCase();
+          user.user_metadata?.["kisan_id"] || "IND-KISAN-" + user.id.slice(0, 4).toUpperCase();
         setFarmerUser({
           id: user.id,
           name: displayName,
           kisanId: userKisan,
-          email: user.email,
+          ...(user.email ? { email: user.email } : {}),
           deviceId: "MITTI-ESP32-01",
           isGuest: false,
         });
@@ -376,23 +374,6 @@ function MittiSentinel() {
     <main className="app-canvas min-h-screen overflow-x-hidden text-foreground">
       <div className="ambient-field" aria-hidden="true" />
 
-      {/* Atmospheric Falling Leaves Animation */}
-      {leavesEnabled && (
-        <FallingLeaves
-          fullScreen
-          count={22}
-          size={[12, 26]}
-          speed={[0.3, 0.8]}
-          wind={[-0.2, 0.5]}
-          sway={[0.5, 1.4]}
-          colors={["#4ade80", "#22c55e", "#a3e635", "#84cc16", "#eab308", "#d97706"]}
-          shapes={["maple", "oak", "ginkgo", "birch", "oval"]}
-          opacity={0.28}
-          zIndex={0}
-          respectReducedMotion={true}
-        />
-      )}
-
       {/* Top Navbar */}
       <header className="topbar">
         <a className="brand-mark" href="#home" aria-label="Mitti Sentinel home">
@@ -517,19 +498,6 @@ function MittiSentinel() {
               </button>
               <button
                 type="button"
-                onClick={() => setLeavesEnabled((prev) => !prev)}
-                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                  leavesEnabled
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                    : "bg-white/5 hover:bg-white/10 text-white/70"
-                }`}
-                title="Toggle ambient falling leaves particle effect"
-              >
-                <Leaf size={12} className="inline mr-1" />
-                {leavesEnabled ? "Leaves: On" : "Leaves: Off"}
-              </button>
-              <button
-                type="button"
                 onClick={() => setIsShareModalOpen(true)}
                 className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer"
                 title="Dispatch WhatsApp / SMS Advisory"
@@ -563,7 +531,7 @@ function MittiSentinel() {
               {/* True-Color vs NDVI Vegetation Toggle */}
               <div className="view-toggle" role="group" aria-label="Satellite map color mode">
                 <Button
-                  variant={mapMode === "true" ? "toggleActive" : "toggle"}
+                  variant={mapMode === "true" ? "secondary" : "ghost"}
                   size="sm"
                   onClick={() => setMapMode("true")}
                   aria-pressed={mapMode === "true"}
@@ -571,7 +539,7 @@ function MittiSentinel() {
                   <Sun size={14} /> True color
                 </Button>
                 <Button
-                  variant={mapMode === "vegetation" ? "toggleActive" : "toggle"}
+                  variant={mapMode === "vegetation" ? "secondary" : "ghost"}
                   size="sm"
                   onClick={() => setMapMode("vegetation")}
                   aria-pressed={mapMode === "vegetation"}
@@ -666,7 +634,7 @@ function MittiSentinel() {
                 </div>
               </div>
               <Button
-                variant="iconGhost"
+                variant="ghost"
                 size="icon"
                 onClick={handleManualRefresh}
                 aria-label="Refresh IoT sensor telemetry"
@@ -750,7 +718,7 @@ function MittiSentinel() {
                 key={`${tick}-${recommendation.action}-${language}-${sensorOfflineTest}-${activePlot.id}-${currentMoisturePercent}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
+                exit={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : -5 }}
                 transition={{ duration: reduceMotion ? 0 : 0.22 }}
               >
                 <div className="action-title-row">
@@ -785,7 +753,7 @@ function MittiSentinel() {
                 {/* Farmer Actions & Voice Playback */}
                 <div className="space-y-2 mt-2">
                   <Button
-                    variant={isConfirmed ? "confirmed" : "recommendation"}
+                    variant={isConfirmed ? "secondary" : "default"}
                     size="default"
                     onClick={handleConfirmRecommendation}
                     disabled={isConfirmed || recommendation.confidencePercent === 0}

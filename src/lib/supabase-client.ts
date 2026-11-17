@@ -63,9 +63,7 @@ export async function signInWithMagicLink(email: string): Promise<{ success: boo
   try {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
-      },
+      options: typeof window !== "undefined" ? { emailRedirectTo: window.location.origin } : {},
     });
     if (error) return { success: false, error: error.message };
     return { success: true };
@@ -81,7 +79,7 @@ export async function signInWithPassword(email: string, password: string): Promi
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { user: null, error: error.message };
-    return { user: data.user, error: undefined };
+    return { user: data.user };
   } catch (err) {
     return { user: null, error: err instanceof Error ? err.message : String(err) };
   }
@@ -103,7 +101,7 @@ export async function signUpWithEmail(email: string, password: string, name: str
       },
     });
     if (error) return { user: null, error: error.message };
-    return { user: data.user, error: undefined };
+    return { user: data.user };
   } catch (err) {
     return { user: null, error: err instanceof Error ? err.message : String(err) };
   }

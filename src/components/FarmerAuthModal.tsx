@@ -62,8 +62,8 @@ export function FarmerAuthModal({
     }
 
     if (user) {
-      const displayName = user.user_metadata?.display_name || email.split("@")[0] || "Registered Farmer";
-      const userKisan = user.user_metadata?.kisan_id || "IND-KISAN-" + user.id.slice(0, 4).toUpperCase();
+      const displayName = user.user_metadata?.["display_name"] || email.split("@")[0] || "Registered Farmer";
+      const userKisan = user.user_metadata?.["kisan_id"] || "IND-KISAN-" + user.id.slice(0, 4).toUpperCase();
       onUpdateFarmer({
         id: user.id,
         name: displayName,

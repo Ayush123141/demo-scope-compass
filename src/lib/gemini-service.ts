@@ -17,7 +17,7 @@ export interface GeminiAdvisoryContext {
   language: "en" | "hi" | "mr";
 }
 
-const GEMINI_API_KEY = typeof import.meta !== "undefined" ? import.meta.env?.VITE_GEMINI_API_KEY : "";
+const GEMINI_API_KEY = typeof import.meta !== "undefined" ? import.meta.env?.["VITE_GEMINI_API_KEY"] : "";
 
 export const isGeminiConfigured = Boolean(
   GEMINI_API_KEY && !GEMINI_API_KEY.includes("your-gemini")

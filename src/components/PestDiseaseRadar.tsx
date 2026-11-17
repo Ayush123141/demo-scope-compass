@@ -78,7 +78,7 @@ export function PestDiseaseRadar({
   }
 
   const badgeColor =
-    riskLevel === "high" || riskLevel === "severe"
+    riskLevel === "high"
       ? "bg-red-500/20 text-red-300 border-red-500/40"
       : riskLevel === "moderate"
       ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
