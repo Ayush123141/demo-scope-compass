@@ -88,6 +88,9 @@ import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
 import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
 import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
 import { NdviCanopyChart } from "@/components/NdviCanopyChart";
+import { FertigationCalculator } from "@/components/FertigationCalculator";
+import { KisanSchemeNavigator } from "@/components/KisanSchemeNavigator";
+import { JudgeGuidedTour } from "@/components/JudgeGuidedTour";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
 import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
@@ -170,6 +173,9 @@ function MittiSentinel() {
 
   // WhatsApp & SMS Advisory Dispatch Modal State
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Judge Guided Auto-Tour State
+  const [isTourRunning, setIsTourRunning] = useState(false);
 
   // Supabase Database Synchronized Recommendations History
   const [supabaseHistory, setSupabaseHistory] = useState<PersistedRecommendation[]>([]);
@@ -424,6 +430,12 @@ function MittiSentinel() {
           </a>
           <a className="nav-link" href="#radar">
             Disease Radar
+          </a>
+          <a className="nav-link" href="#fertigation">
+            Fertigation
+          </a>
+          <a className="nav-link" href="#schemes">
+            Kisan Schemes
           </a>
           <a className="nav-link" href="#roi">
             Water ROI
@@ -973,7 +985,23 @@ function MittiSentinel() {
           />
         </section>
 
-        {/* High-Impact Feature Row 3: Dynamic Water & Energy Tariff ROI Calculator */}
+        {/* High-Impact Feature Row 3: Precision Fertigation & NPK Leaching Guard */}
+        <section id="fertigation" className="mt-6">
+          <FertigationCalculator
+            cropType={activePlot.cropType}
+            moisturePercent={currentMoisturePercent}
+            rainfallMm24h={forecast.rainfallMm24h}
+            acres={activePlot.acres}
+            className="glass-surface"
+          />
+        </section>
+
+        {/* High-Impact Feature Row 4: PM-KUSUM & PMKSY Government Scheme Navigator */}
+        <section id="schemes" className="mt-6">
+          <KisanSchemeNavigator acres={activePlot.acres} className="glass-surface" />
+        </section>
+
+        {/* High-Impact Feature Row 5: Dynamic Water & Energy Tariff ROI Calculator */}
         <section id="roi" className="mt-6">
           <WaterRoiCalculator cropType={activePlot.cropType} className="glass-surface" />
         </section>
@@ -1319,6 +1347,13 @@ function MittiSentinel() {
           </div>
         </footer>
       </div>
+
+      {/* Floating Interactive Judge Guided Tour (Auto-Demo Mode) */}
+      <JudgeGuidedTour
+        isRunning={isTourRunning}
+        onStartTour={() => setIsTourRunning(true)}
+        onStopTour={() => setIsTourRunning(false)}
+      />
     </main>
   );
 }
