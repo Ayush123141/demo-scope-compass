@@ -88,6 +88,7 @@ import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
 import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
 import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
+import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
 
 type Language = "en" | "hi" | "mr";
@@ -135,9 +136,15 @@ function MittiSentinel() {
   const [mapMode, setMapMode] = useState<MapMode>("true");
   const [language, setLanguage] = useState<Language>("en");
   const [sensorOfflineTest, setSensorOfflineTest] = useState(false);
+  const [leavesEnabled, setLeavesEnabled] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const [confirmedTicks, setConfirmedTicks] = useState<number[]>([]);
   const [nowLabel, setNowLabel] = useState("08:00");
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Active Farm Plot & Multi-Location Selection State
   const [activePlot, setActivePlot] = useState<FarmPlotCoordinates>(PRESET_FARM_PLOTS[0]!);
@@ -374,6 +381,23 @@ function MittiSentinel() {
     <main className="app-canvas min-h-screen overflow-x-hidden text-foreground">
       <div className="ambient-field" aria-hidden="true" />
 
+      {/* Atmospheric Falling Leaves Animation (Client-Only Guard for SSR safety) */}
+      {isClient && leavesEnabled && (
+        <FallingLeaves
+          fullScreen
+          count={22}
+          size={[12, 26]}
+          speed={[0.3, 0.8]}
+          wind={[-0.2, 0.5]}
+          sway={[0.5, 1.4]}
+          colors={["#4ade80", "#22c55e", "#a3e635", "#84cc16", "#eab308", "#d97706"]}
+          shapes={["maple", "oak", "ginkgo", "birch", "oval"]}
+          opacity={0.28}
+          zIndex={0}
+          respectReducedMotion={true}
+        />
+      )}
+
       {/* Top Navbar */}
       <header className="topbar">
         <a className="brand-mark" href="#home" aria-label="Mitti Sentinel home">
@@ -495,6 +519,19 @@ function MittiSentinel() {
               >
                 {sensorOfflineTest ? <WifiOff size={12} className="inline mr-1" /> : <Wifi size={12} className="inline mr-1" />}
                 {sensorOfflineTest ? "Sensor: Offline (Degraded)" : "Sensor: Live"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLeavesEnabled((prev) => !prev)}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  leavesEnabled
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    : "bg-white/5 hover:bg-white/10 text-white/70"
+                }`}
+                title="Toggle ambient falling leaves particle effect"
+              >
+                <Leaf size={12} className="inline mr-1" />
+                {leavesEnabled ? "Leaves: On" : "Leaves: Off"}
               </button>
               <button
                 type="button"
