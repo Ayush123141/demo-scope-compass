@@ -87,6 +87,7 @@ import { FarmerAuthModal } from "@/components/FarmerAuthModal";
 import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
 import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
 import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
+import { NdviCanopyChart } from "@/components/NdviCanopyChart";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
 import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
@@ -648,6 +649,13 @@ function MittiSentinel() {
                 ))}
               </div>
             </div>
+
+            {/* Historical NDVI Canopy Progression Chart */}
+            <NdviCanopyChart
+              activePassIndex={sceneIndex}
+              onSelectPass={(idx) => setSceneIndex(idx)}
+              className="mt-4"
+            />
           </motion.section>
 
           {/* Bento Card 2: Soil Moisture IoT Dial & Multi-Depth 24h Profile */}
