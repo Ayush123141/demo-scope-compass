@@ -1,0 +1,18 @@
+# Mitti Sentinel — Predictive Climate Intelligence Upgrade
+
+## Goal
+Extend the existing Mitti Sentinel experience in place. Preserve its dashboard, farm plots, map, telemetry, advisory, AI assistant, and existing tools; add explainable farm-specific climate and crop insights without presenting fixtures as observations.
+
+## Implementation steps
+1. **Establish trustworthy inputs.** Keep the existing Open-Meteo forecast service and selected-plot coordinates. Add a historical-weather service for supported 30-day, 90-day, and 12-month views, with input validation, timeout/error handling, date ranges, units, source labels, and update timestamps. Treat failed or incomplete data as unavailable, not zero.
+2. **Build climate-risk intelligence.** Add browser-safe types and a deterministic, tested prototype scoring service for dry spells/drought, heavy rain/waterlogging, and heat stress. Show contributing measurements, reasoning, suggested precautions, confidence/data limits, and the prototype-only disclaimer. Withhold scores when required inputs are missing. Add a dedicated Climate Risk page with historical charts, rainfall comparisons, and forecast alerts for the selected plot.
+3. **Make satellite analysis honest and extensible.** Preserve the current map and add a provider/data-status contract for vegetation observations. Clearly identify existing NDVI chart values as fixtures; do not call them real Copernicus data. Compute spectral indices only when valid multispectral bands are supplied. Without a verified provider and observations, show an unavailable state while retaining fixture previews with explicit labels.
+4. **Add preliminary crop suitability and impact.** Create a configurable crop reference set and explainable suitability scoring based only on available plot climate, forecast, and moisture inputs. Show the reasons, water/climate fit, risks, missing soil measurements, and a relative stress/impact level—not fabricated yield tonnage. Add a dedicated Crop Suitability page.
+5. **Integrate without crowding the dashboard.** Add a compact climate summary and navigation to the new pages. Extend Ask Mitti AI context with only available, source-labeled plot-specific findings; retain English, Hindi, and Marathi, and ensure missing data is disclosed and provider secrets stay out of browser code. Keep the existing visual system and all existing tools.
+6. **Validate and document.** Add unit tests for climate scoring, missing-data safeguards, and crop suitability across different inputs. Run existing and new tests, type-check, verify build and desktop/mobile flows, and update `specs.md`, `TESTING.md`, and `roadmap.md` to reflect only verified integrations and checks. Do not add database schema or claim real satellite/sensor connections without verified inputs.
+
+## Existing-code reuse
+Reuse the selected farm plot and map from `src/lib/satellite-service.ts` and `src/routes/index.tsx`; current and fallback weather from `src/lib/weather-service.ts`; sensor freshness and rule-based decisions from `src/lib/decision-agent.ts`; the existing charts and `askMittiAi` context. Keep new analysis in separate services rather than expanding the dashboard component with business logic.
+
+## Trust and scope limits
+The existing Open-Meteo service can supply current/forecast weather; historical API access must be verified during implementation. The present NDVI progression is modeled fixture data, not confirmed multispectral observations. Do not infer soil pH, NPK, yield tonnage, or validated agronomic outcomes. No new backend, secret, migration, or Supabase project connection is assumed for this analytics upgrade.
