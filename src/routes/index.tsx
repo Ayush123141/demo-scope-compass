@@ -101,6 +101,8 @@ import { FarmerAuthModal } from "@/components/FarmerAuthModal";
 import { WaterRoiCalculator } from "@/components/WaterRoiCalculator";
 import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
 import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
+import { SolenoidValveDigitalTwin } from "@/components/SolenoidValveDigitalTwin";
+import { ApmcMandiProfitMaximizer } from "@/components/ApmcMandiProfitMaximizer";
 import { NdviCanopyChart } from "@/components/NdviCanopyChart";
 import { FertigationCalculator } from "@/components/FertigationCalculator";
 import { KisanSchemeNavigator } from "@/components/KisanSchemeNavigator";
@@ -490,6 +492,12 @@ function MittiSentinel() {
           </a>
           <a className="nav-link" href="#hardware">
             IoT Studio
+          </a>
+          <a className="nav-link" href="#valves">
+            Solenoid Valves
+          </a>
+          <a className="nav-link" href="#mandi">
+            APMC Mandi
           </a>
           <a className="nav-link" href="#radar">
             Disease Radar
@@ -1100,7 +1108,27 @@ function MittiSentinel() {
           />
         </section>
 
-        {/* High-Impact Feature Row 2: Pest & Fungal Disease Risk Radar */}
+        {/* High-Impact Feature Row 2: Solenoid Valve Digital Twin & Animated Water Flow (Phase C) */}
+        <section id="valves" className="mt-6">
+          <SolenoidValveDigitalTwin
+            currentMoisture={currentMoisturePercent}
+            rainfallMm24h={forecast.rainfallMm24h}
+            isHoldOffRecommended={recommendation.action === "hold_off" || recommendation.action === "protect_crop"}
+            className="glass-surface"
+          />
+        </section>
+
+        {/* High-Impact Feature Row 3: APMC Mandi Commodity Ticker & Profit Maximizer (Phase D) */}
+        <section id="mandi" className="mt-6">
+          <ApmcMandiProfitMaximizer
+            cropType={activePlot.cropType}
+            acres={activePlot.acres}
+            currentMoisture={currentMoisturePercent}
+            className="glass-surface"
+          />
+        </section>
+
+        {/* High-Impact Feature Row 4: Pest & Fungal Disease Risk Radar */}
         <section id="radar" className="mt-6">
           <PestDiseaseRadar
             cropType={activePlot.cropType}
@@ -1112,7 +1140,7 @@ function MittiSentinel() {
           />
         </section>
 
-        {/* High-Impact Feature Row 3: Precision Fertigation & NPK Leaching Guard */}
+        {/* High-Impact Feature Row 5: Precision Fertigation & NPK Leaching Guard */}
         <section id="fertigation" className="mt-6">
           <FertigationCalculator
             cropType={activePlot.cropType}
@@ -1123,12 +1151,12 @@ function MittiSentinel() {
           />
         </section>
 
-        {/* High-Impact Feature Row 4: PM-KUSUM & PMKSY Government Scheme Navigator */}
+        {/* High-Impact Feature Row 6: PM-KUSUM & PMKSY Government Scheme Navigator */}
         <section id="schemes" className="mt-6">
           <KisanSchemeNavigator acres={activePlot.acres} className="glass-surface" />
         </section>
 
-        {/* High-Impact Feature Row 5: Dynamic Water & Energy Tariff ROI Calculator */}
+        {/* High-Impact Feature Row 7: Dynamic Water & Energy Tariff ROI Calculator */}
         <section id="roi" className="mt-6">
           <WaterRoiCalculator cropType={activePlot.cropType} className="glass-surface" />
         </section>

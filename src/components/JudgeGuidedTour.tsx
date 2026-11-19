@@ -19,8 +19,8 @@ export function JudgeGuidedTour({
 
   const steps = [
     {
-      title: "1. Spaceborne Satellite Grounding",
-      desc: "Sentinel-2 L2A multi-spectral optical & NDVI vegetation passes centered on plot coordinates.",
+      title: "1. Multi-Spectral Spaceborne Imagery",
+      desc: "Sentinel-2 5-index suite (RGB, NDVI, NDWI, SAVI, EVI) centered on authentic rural agrarian field bunds.",
       targetId: "dashboard",
     },
     {
@@ -29,18 +29,28 @@ export function JudgeGuidedTour({
       targetId: "dashboard",
     },
     {
-      title: "3. Honest AI Advisory & Regional Voice",
-      desc: "Safety-gated heuristic recommendation with trilingual text-to-speech audio in Marathi & Hindi.",
+      title: "3. Two-Way Regional Voice Copilot",
+      desc: "Microphone speech recognition input & audio broadcasts in Marathi, Hindi, and English.",
       targetId: "dashboard",
     },
     {
-      title: "4. Pest Radar & Precision Fertigation",
+      title: "4. Solenoid Valve Digital Twin",
+      desc: "Interactive 3-zone manifold with animated water flow, safety interlocks, and live MQTT packets.",
+      targetId: "valves",
+    },
+    {
+      title: "5. APMC Mandi Profit Maximizer",
+      desc: "Real-time wholesale auction ticker & pre-harvest irrigation cut-off to eliminate dockage penalties (कटौती).",
+      targetId: "mandi",
+    },
+    {
+      title: "6. Pest Radar & Precision Fertigation",
       desc: "Micro-climate spore germination alerts and NPK leaching guards to prevent fertilizer loss.",
       targetId: "radar",
     },
     {
-      title: "5. Water & Energy ROI Economics",
-      desc: "Quantified groundwater & power savings (77,000+ liters & ₹420+ power saved per deferred cycle).",
+      title: "7. Water & Energy ROI Economics",
+      desc: "Quantified groundwater & power savings (860,000+ liters & ₹14,200 annual savings for 3.8-acre farmer).",
       targetId: "roi",
     },
   ];
