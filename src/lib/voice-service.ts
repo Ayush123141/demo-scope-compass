@@ -1,9 +1,109 @@
 /**
- * Voice Advisory Service for Mitti Sentinel
+ * Voice Advisory & Two-Way Speech Recognition Service for Mitti Sentinel
  *
- * Provides real-time Text-to-Speech (TTS) audio advisories in
- * English, Hindi (हिन्दी), and Marathi (मराठी) using the native Web Speech API.
+ * Provides:
+ * 1. Text-to-Speech (TTS) audio advisories in English, Hindi (हिन्दी), and Marathi (मराठी).
+ * 2. Speech-to-Text (STT) voice question recognition in English, Hindi, and Marathi using Web Speech API.
  */
+
+// Global Speech Recognition reference
+let activeRecognitionInstance: any = null;
+
+export function isSpeechRecognitionSupported(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition
+  );
+}
+
+export function startVoiceRecognition({
+  language,
+  onResult,
+  onError,
+  onEnd,
+}: {
+  language: "en" | "hi" | "mr";
+  onResult: (transcript: string, isFinal: boolean) => void;
+  onError?: (error: string) => void;
+  onEnd?: () => void;
+}): boolean {
+  if (!isSpeechRecognitionSupported()) {
+    if (onError) onError("Speech recognition is not supported in this browser.");
+    return false;
+  }
+
+  // Stop any active instance first
+  stopVoiceRecognition();
+
+  const SpeechRecognitionConstructor =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+  try {
+    const recognition = new SpeechRecognitionConstructor();
+    activeRecognitionInstance = recognition;
+
+    // Configure language
+    if (language === "hi") {
+      recognition.lang = "hi-IN";
+    } else if (language === "mr") {
+      recognition.lang = "mr-IN";
+    } else {
+      recognition.lang = "en-IN";
+    }
+
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = "";
+      let finalTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      if (finalTranscript.trim()) {
+        onResult(finalTranscript.trim(), true);
+      } else if (interimTranscript.trim()) {
+        onResult(interimTranscript.trim(), false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.warn("Speech recognition error:", event.error);
+      if (onError) onError(event.error || "Voice recognition error");
+    };
+
+    recognition.onend = () => {
+      activeRecognitionInstance = null;
+      if (onEnd) onEnd();
+    };
+
+    recognition.start();
+    return true;
+  } catch (err) {
+    console.error("Failed to start speech recognition:", err);
+    if (onError) onError(err instanceof Error ? err.message : String(err));
+    return false;
+  }
+}
+
+export function stopVoiceRecognition(): void {
+  if (activeRecognitionInstance) {
+    try {
+      activeRecognitionInstance.abort();
+    } catch {
+      // ignore
+    }
+    activeRecognitionInstance = null;
+  }
+}
 
 export function speakAdvisory(
   text: string,
@@ -20,7 +120,7 @@ export function speakAdvisory(
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  
+
   // Configure language locale
   if (language === "hi") {
     utterance.lang = "hi-IN";

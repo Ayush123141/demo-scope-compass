@@ -14,12 +14,17 @@ import {
   Cpu,
   Database,
   Droplets,
+  Eye,
   Globe,
+  Info,
+  Layers,
   Leaf,
   LocateFixed,
   Lock,
   MapPin,
   MessageSquare,
+  Mic,
+  MicOff,
   Navigation,
   Radio,
   RefreshCw,
@@ -47,8 +52,11 @@ import {
   createPlotBoundary,
   SATELLITE_PASS_HISTORY,
   TILE_LAYERS,
+  MULTI_SPECTRAL_INDICES,
   type FarmPlotCoordinates,
   type SatellitePass,
+  type MultiSpectralIndex,
+  type SpectralIndexMetadata,
 } from "@/lib/satellite-service";
 import {
   SAMPLE_REAL_IOT_READING,
@@ -80,7 +88,13 @@ import {
   DEFAULT_FALLBACK_WEATHER,
 } from "@/lib/weather-service";
 import { calculateRealisticSoilMoisture } from "@/lib/soil-hydrology";
-import { speakAdvisory, stopAdvisorySpeech } from "@/lib/voice-service";
+import {
+  speakAdvisory,
+  stopAdvisorySpeech,
+  isSpeechRecognitionSupported,
+  startVoiceRecognition,
+  stopVoiceRecognition,
+} from "@/lib/voice-service";
 import { SoilMoistureTrendChart } from "@/components/SoilMoistureTrendChart";
 import { AdvisoryShareModal } from "@/components/AdvisoryShareModal";
 import { FarmerAuthModal } from "@/components/FarmerAuthModal";
@@ -96,7 +110,7 @@ import { FallingLeaves } from "falling-leaves/react";
 import "leaflet/dist/leaflet.css";
 
 type Language = "en" | "hi" | "mr";
-type MapMode = "true" | "vegetation";
+type MapMode = MultiSpectralIndex;
 
 const languageLabels: Record<Language, string> = { en: "English", hi: "हिन्दी", mr: "मराठी" };
 
@@ -139,7 +153,7 @@ export const Route = createFileRoute("/")({
 function MittiSentinel() {
   const [tick, setTick] = useState(0);
   const [sceneIndex, setSceneIndex] = useState(SATELLITE_PASS_HISTORY.length - 1);
-  const [mapMode, setMapMode] = useState<MapMode>("true");
+  const [mapMode, setMapMode] = useState<MapMode>("ndvi");
   const [language, setLanguage] = useState<Language>("en");
   const [sensorOfflineTest, setSensorOfflineTest] = useState(false);
   const [leavesEnabled, setLeavesEnabled] = useState(true);
@@ -185,6 +199,11 @@ function MittiSentinel() {
   const [aiQuery, setAiQuery] = useState("");
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Two-Way Voice Speech-to-Text State
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [autoSpeakAi, setAutoSpeakAi] = useState(true);
 
   // 1. Check existing Supabase user session on app mount
   useEffect(() => {
@@ -364,6 +383,50 @@ function MittiSentinel() {
     const reply = await askMittiAi(promptToSend, context);
     setAiAnswer(reply);
     setIsAiLoading(false);
+
+    // Hands-Free Audio Broadcast (Phase 1 Two-Way Copilot)
+    if (autoSpeakAi && reply) {
+      speakAdvisory(
+        reply,
+        language,
+        () => setIsSpeaking(true),
+        () => setIsSpeaking(false)
+      );
+    }
+  }
+
+  function handleToggleVoiceInput() {
+    if (isListening) {
+      stopVoiceRecognition();
+      setIsListening(false);
+      return;
+    }
+
+    setVoiceError(null);
+    const started = startVoiceRecognition({
+      language,
+      onResult: (transcript, isFinal) => {
+        setAiQuery(transcript);
+        if (isFinal) {
+          setIsListening(false);
+          void handleAskGemini(transcript);
+        }
+      },
+      onError: (err) => {
+        console.warn("Speech recognition error:", err);
+        setVoiceError(err);
+        setIsListening(false);
+      },
+      onEnd: () => {
+        setIsListening(false);
+      },
+    });
+
+    if (started) {
+      setIsListening(true);
+    } else {
+      setVoiceError("Microphone input is unavailable or unsupported in this browser.");
+    }
   }
 
   function handleSelectCustomCoordinates(e: React.FormEvent) {
@@ -580,24 +643,57 @@ function MittiSentinel() {
                 </div>
               </div>
 
-              {/* True-Color vs NDVI Vegetation Toggle */}
-              <div className="view-toggle" role="group" aria-label="Satellite map color mode">
+              {/* Multi-Spectral Satellite Index Suite Toggle */}
+              <div className="view-toggle flex-wrap" role="group" aria-label="Multi-spectral satellite index mode">
                 <Button
                   variant={mapMode === "true" ? "secondary" : "ghost"}
                   size="sm"
                   onClick={() => setMapMode("true")}
                   aria-pressed={mapMode === "true"}
+                  title="Natural RGB optical scene"
+                  className="text-xs"
                 >
-                  <Sun size={14} /> True color
+                  <Eye size={13} className="mr-1" /> True Color
                 </Button>
                 <Button
-                  variant={mapMode === "vegetation" ? "secondary" : "ghost"}
+                  variant={mapMode === "ndvi" ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => setMapMode("vegetation")}
-                  aria-pressed={mapMode === "vegetation"}
-                  title="Chlorophyll Absorption (NDVI Vegetation View)"
+                  onClick={() => setMapMode("ndvi")}
+                  aria-pressed={mapMode === "ndvi"}
+                  title="Normalized Difference Vegetation Index (Chlorophyll & Biomass)"
+                  className="text-xs"
                 >
-                  <Leaf size={14} /> NDVI Vegetation
+                  <Leaf size={13} className="mr-1" /> NDVI
+                </Button>
+                <Button
+                  variant={mapMode === "ndwi" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setMapMode("ndwi")}
+                  aria-pressed={mapMode === "ndwi"}
+                  title="Normalized Difference Water Index (Internal Leaf Water Thickness)"
+                  className="text-xs"
+                >
+                  <Droplets size={13} className="mr-1" /> NDWI
+                </Button>
+                <Button
+                  variant={mapMode === "savi" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setMapMode("savi")}
+                  aria-pressed={mapMode === "savi"}
+                  title="Soil-Adjusted Vegetation Index (Dampens Soil Background for Emerging Crops)"
+                  className="text-xs"
+                >
+                  <Layers size={13} className="mr-1" /> SAVI
+                </Button>
+                <Button
+                  variant={mapMode === "evi" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setMapMode("evi")}
+                  aria-pressed={mapMode === "evi"}
+                  title="Enhanced Vegetation Index (Penetrates High-Biomass Sugarcane & Vineyards)"
+                  className="text-xs"
+                >
+                  <Sparkles size={13} className="mr-1" /> EVI
                 </Button>
               </div>
             </div>
@@ -619,7 +715,7 @@ function MittiSentinel() {
 
               <div className="map-image-pill">
                 <span className="image-pill-dot" />{" "}
-                {mapMode === "true" ? "TRUE COLOR (RGB B04-B03-B02)" : "NDVI VEGETATION (B08/B04)"}
+                {MULTI_SPECTRAL_INDICES[mapMode].shortName.toUpperCase()} · {MULTI_SPECTRAL_INDICES[mapMode].formula}
               </div>
 
               <div className="map-legend">
@@ -628,6 +724,37 @@ function MittiSentinel() {
 
               <div className="map-area-pill">
                 PASS: {currentPass.dateLabel} · CLOUD: {currentPass.cloudCoverPercent}%
+              </div>
+            </div>
+
+            {/* Multi-Spectral Index Agronomic Diagnostics */}
+            <div className="mt-3 p-3 rounded-lg bg-black/40 border border-white/10 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">
+                    {MULTI_SPECTRAL_INDICES[mapMode].badge}
+                  </span>
+                  <span className="font-semibold text-white">
+                    {MULTI_SPECTRAL_INDICES[mapMode].name}
+                  </span>
+                </div>
+                <div className="font-mono text-[11px] text-emerald-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                  Formula: {MULTI_SPECTRAL_INDICES[mapMode].formula}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-2 text-white/80">
+                <div>
+                  <span className="text-white/40 block text-[10px] uppercase tracking-wider">Agronomic Purpose</span>
+                  <span>{MULTI_SPECTRAL_INDICES[mapMode].description}</span>
+                </div>
+                <div>
+                  <span className="text-white/40 block text-[10px] uppercase tracking-wider">Target Application</span>
+                  <span>{MULTI_SPECTRAL_INDICES[mapMode].idealFor}</span>
+                </div>
+                <div>
+                  <span className="text-white/40 block text-[10px] uppercase tracking-wider">Spectral Bands & Range</span>
+                  <span>{MULTI_SPECTRAL_INDICES[mapMode].bandsUsed} · ({MULTI_SPECTRAL_INDICES[mapMode].typicalRange})</span>
+                </div>
               </div>
             </div>
 
@@ -1041,29 +1168,82 @@ function MittiSentinel() {
               </div>
 
               {/* Quick Prompt Chips */}
-              <div className="py-4 flex flex-wrap gap-2 text-xs">
+              <div className="py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleAskGemini("Can I hold off irrigation until tomorrow morning?")}
+                    className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-white/80"
+                  >
+                    💧 Hold off till tomorrow?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAskGemini("पिकावर कीड किंवा बुरशी पडण्याची शक्यता आहे का?")}
+                    className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-white/80"
+                  >
+                    🌾 कीड/बुरशी धोका? (मराठी)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAskGemini("फसल में जलभराव रोकने के जरूरी उपाय बताएं")}
+                    className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-white/80"
+                  >
+                    🌧️ जल निकासी उपाय (हिन्दी)
+                  </button>
+                </div>
+
+                {/* Auto-Readout Audio Toggle */}
                 <button
                   type="button"
-                  onClick={() => handleAskGemini("Can I hold off irrigation until tomorrow morning?")}
-                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-white/80"
+                  onClick={() => setAutoSpeakAi(!autoSpeakAi)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded border text-[11px] transition-colors cursor-pointer ${
+                    autoSpeakAi
+                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                      : "bg-white/5 border-white/10 text-white/60"
+                  }`}
+                  title="Automatically speak AI responses out loud in selected language"
                 >
-                  💧 Hold off till tomorrow?
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAskGemini("पिकावर कीड किंवा बुरशी पडण्याची शक्यता आहे का?")}
-                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-white/80"
-                >
-                  🌾 कीड/बुरशी धोका? (मराठी)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAskGemini("फसल में जलभराव रोकने के जरूरी उपाय बताएं")}
-                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer text-white/80"
-                >
-                  🌧️ जल निकासी उपाय (हिन्दी)
+                  {autoSpeakAi ? <Volume2 size={12} /> : <VolumeX size={12} />}
+                  <span>{autoSpeakAi ? "Voice On" : "Voice Muted"}</span>
                 </button>
               </div>
+
+              {/* Voice Listening Status Banner */}
+              {isListening && (
+                <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                    <span className="font-medium">
+                      Listening in {language === "hi" ? "हिन्दी (Hindi)" : language === "mr" ? "मराठी (Marathi)" : "English"}... Speak your question.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopVoiceRecognition();
+                      setIsListening(false);
+                    }}
+                    className="text-white/70 hover:text-white text-[11px] underline"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
+              {/* Voice Error Banner */}
+              {voiceError && (
+                <div className="mb-3 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center justify-between">
+                  <span>{voiceError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setVoiceError(null)}
+                    className="text-white/60 hover:text-white ml-2"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
 
               {/* AI Response Display Area */}
               <div className="min-h-[120px] max-h-[220px] overflow-y-auto p-4 rounded-lg bg-black/40 border border-white/10 text-sm leading-relaxed text-white/90">
@@ -1074,19 +1254,42 @@ function MittiSentinel() {
                   </div>
                 ) : aiAnswer ? (
                   <div className="space-y-2">
-                    <div className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-                      <Sparkles size={13} /> Mitti AI Agronomic Advice:
+                    <div className="flex items-center justify-between text-xs text-emerald-400 font-semibold">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles size={13} /> Mitti AI Agronomic Advice:
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSpeaking) {
+                            stopAdvisorySpeech();
+                            setIsSpeaking(false);
+                          } else {
+                            speakAdvisory(
+                              aiAnswer,
+                              language,
+                              () => setIsSpeaking(true),
+                              () => setIsSpeaking(false)
+                            );
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer"
+                        title="Replay spoken advisory audio"
+                      >
+                        {isSpeaking ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                        <span>{isSpeaking ? "Stop Voice" : "Listen Aloud"}</span>
+                      </button>
                     </div>
                     <p>{aiAnswer}</p>
                   </div>
                 ) : (
                   <div className="text-muted-foreground text-center py-6 text-xs">
-                    Ask any question about your crop, irrigation timing, or weather impact.
+                    Ask any question about your crop, irrigation timing, or weather impact — typing or speaking in your native language.
                   </div>
                 )}
               </div>
 
-              {/* Input Area */}
+              {/* Two-Way Input Area with Voice Microphone */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1098,9 +1301,25 @@ function MittiSentinel() {
                   type="text"
                   value={aiQuery}
                   onChange={(e) => setAiQuery(e.target.value)}
-                  placeholder="Ask a question about your field in English, हिन्दी, or मराठी..."
+                  placeholder={
+                    isListening
+                      ? "Listening to your voice..."
+                      : `Ask in ${languageLabels[language]} (type or tap mic)...`
+                  }
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-emerald-500"
                 />
+
+                {/* Microphone Speech Recognition Button */}
+                <Button
+                  type="button"
+                  variant={isListening ? "destructive" : "secondary"}
+                  onClick={handleToggleVoiceInput}
+                  title={isListening ? "Stop listening" : `Speak question in ${languageLabels[language]}`}
+                  className={`px-3.5 relative ${isListening ? "animate-pulse border-red-500" : ""}`}
+                >
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                </Button>
+
                 <Button type="submit" disabled={isAiLoading || !aiQuery.trim()} className="px-4">
                   <Send size={15} />
                 </Button>

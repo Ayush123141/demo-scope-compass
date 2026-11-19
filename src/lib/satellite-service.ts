@@ -207,3 +207,82 @@ export const TILE_LAYERS = {
     attribution: "© ISRO Bhuvan NRSC Indian Earth Observation",
   },
 };
+
+export type MultiSpectralIndex = "true" | "ndvi" | "ndwi" | "savi" | "evi";
+
+export interface SpectralIndexMetadata {
+  id: MultiSpectralIndex;
+  name: string;
+  shortName: string;
+  badge: string;
+  formula: string;
+  bandsUsed: string;
+  description: string;
+  idealFor: string;
+  typicalRange: string;
+  colorScheme: string;
+}
+
+export const MULTI_SPECTRAL_INDICES: Record<MultiSpectralIndex, SpectralIndexMetadata> = {
+  true: {
+    id: "true",
+    name: "True Color (Natural RGB)",
+    shortName: "True Color",
+    badge: "RGB",
+    formula: "B04 (Red) + B03 (Green) + B02 (Blue)",
+    bandsUsed: "B04 (665nm), B03 (560nm), B02 (490nm)",
+    description: "Optical visible spectrum matching human vision. Used to verify field boundaries, roads, water bodies, and cloud cover.",
+    idealFor: "Boundary alignment, cloud shadow inspection, and general orientation",
+    typicalRange: "Visual RGB [0 - 255]",
+    colorScheme: "Natural landscape colors",
+  },
+  ndvi: {
+    id: "ndvi",
+    name: "NDVI (Normalized Difference Vegetation Index)",
+    shortName: "NDVI Canopy",
+    badge: "BOMASS",
+    formula: "(B08 - B04) / (B08 + B04)",
+    bandsUsed: "B08 (NIR 842nm), B04 (Red 665nm)",
+    description: "Standard measure of chlorophyll absorption and photosynthetic vigor. Quantifies vegetative biomass density.",
+    idealFor: "Canopy growth tracking, vegetative vigor, and nitrogen uptake monitoring",
+    typicalRange: "0.20 (sparse) to 0.85 (vigorous canopy)",
+    colorScheme: "Ochre / Yellow (low) → Vibrant Emerald (high)",
+  },
+  ndwi: {
+    id: "ndwi",
+    name: "NDWI (Normalized Difference Water Index)",
+    shortName: "NDWI Moisture",
+    badge: "WATER",
+    formula: "(B08 - B11) / (B08 + B11)",
+    bandsUsed: "B08 (NIR 842nm), B11 (SWIR 1610nm)",
+    description: "Gao (1996) liquid water index. Detects canopy internal leaf water thickness 48 hours before visible crop wilting occurs.",
+    idealFor: "Early canopy drought stress detection and irrigation deficit verification",
+    typicalRange: "-0.20 (water deficit) to +0.45 (hydrated)",
+    colorScheme: "Crimson / Amber (stress) → Aqua / Cyan (hydrated)",
+  },
+  savi: {
+    id: "savi",
+    name: "SAVI (Soil-Adjusted Vegetation Index)",
+    shortName: "SAVI Soil-Proof",
+    badge: "EARLY",
+    formula: "1.5 × (B08 - B04) / (B08 + B04 + 0.5)",
+    bandsUsed: "B08 (NIR), B04 (Red) with L=0.5 soil adjustment factor",
+    description: "Cancels out background soil reflectance in early crop growth stages when crop canopy covers less than 35% of the soil.",
+    idealFor: "Germination, seedling stages, and widely spaced orchards",
+    typicalRange: "0.15 (bare soil) to 0.70 (dense cover)",
+    colorScheme: "Sandy Ochre → Olive → Deep Green",
+  },
+  evi: {
+    id: "evi",
+    name: "EVI (Enhanced Vegetation Index)",
+    shortName: "EVI Deep Canopy",
+    badge: "DENSE",
+    formula: "2.5 × (B08 - B04) / (B08 + 6×B04 - 7.5×B02 + 1)",
+    bandsUsed: "B08 (NIR), B04 (Red), B02 (Blue)",
+    description: "Decouples atmospheric haze and prevents saturation in high-biomass crops (like sugarcane, grapes, and orchards).",
+    idealFor: "Sugarcane, mature cotton, vineyard trellises, and dense tree orchards",
+    typicalRange: "0.25 to 0.85 (dynamic non-saturating)",
+    colorScheme: "Light Lime → Forest Pine → Dark Teal",
+  },
+};
+
