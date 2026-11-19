@@ -254,7 +254,6 @@ export function ApmcMandiProfitMaximizer({
             Water saved during drying: <b>{waterSavedLiters.toLocaleString()} L</b> · Electricity saved: <b>₹{electricitySavings}</b>
           </div>
         </div>
-
         <div className="text-right">
           <span className="text-[10px] uppercase text-white/50 block">Net Financial Gain</span>
           <span className="text-lg font-mono font-bold text-emerald-400">
