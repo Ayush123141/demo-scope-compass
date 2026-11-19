@@ -39,17 +39,22 @@ export function JudgeGuidedTour({
       targetId: "valves",
     },
     {
-      title: "5. APMC Mandi Profit Maximizer",
+      title: "5. Gram Panchayat LoRaWAN Mesh Hub",
+      desc: "Sub-GHz 868MHz zero-cellular mesh linking 100+ farm probes across 6km to 1 solar tower.",
+      targetId: "lora",
+    },
+    {
+      title: "6. APMC Mandi Profit Maximizer",
       desc: "Real-time wholesale auction ticker & pre-harvest irrigation cut-off to eliminate dockage penalties (कटौती).",
       targetId: "mandi",
     },
     {
-      title: "6. Pest Radar & Precision Fertigation",
+      title: "7. Pest Radar & Precision Fertigation",
       desc: "Micro-climate spore germination alerts and NPK leaching guards to prevent fertilizer loss.",
       targetId: "radar",
     },
     {
-      title: "7. Water & Energy ROI Economics",
+      title: "8. Water & Energy ROI Economics",
       desc: "Quantified groundwater & power savings (860,000+ liters & ₹14,200 annual savings for 3.8-acre farmer).",
       targetId: "roi",
     },

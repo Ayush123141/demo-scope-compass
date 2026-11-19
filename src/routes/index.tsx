@@ -103,6 +103,7 @@ import { HardwareTelemetryStudio } from "@/components/HardwareTelemetryStudio";
 import { PestDiseaseRadar } from "@/components/PestDiseaseRadar";
 import { SolenoidValveDigitalTwin } from "@/components/SolenoidValveDigitalTwin";
 import { ApmcMandiProfitMaximizer } from "@/components/ApmcMandiProfitMaximizer";
+import { LoRaMeshNetworkHub } from "@/components/LoRaMeshNetworkHub";
 import { NdviCanopyChart } from "@/components/NdviCanopyChart";
 import { FertigationCalculator } from "@/components/FertigationCalculator";
 import { KisanSchemeNavigator } from "@/components/KisanSchemeNavigator";
@@ -495,6 +496,9 @@ function MittiSentinel() {
           </a>
           <a className="nav-link" href="#valves">
             Solenoid Valves
+          </a>
+          <a className="nav-link" href="#lora">
+            LoRa Mesh
           </a>
           <a className="nav-link" href="#mandi">
             APMC Mandi
@@ -1118,7 +1122,12 @@ function MittiSentinel() {
           />
         </section>
 
-        {/* High-Impact Feature Row 3: APMC Mandi Commodity Ticker & Profit Maximizer (Phase D) */}
+        {/* High-Impact Feature Row 3: Gram Panchayat LoRaWAN 868MHz Mesh Hub (Phase E) */}
+        <section id="lora" className="mt-6">
+          <LoRaMeshNetworkHub className="glass-surface" />
+        </section>
+
+        {/* High-Impact Feature Row 4: APMC Mandi Commodity Ticker & Profit Maximizer (Phase D) */}
         <section id="mandi" className="mt-6">
           <ApmcMandiProfitMaximizer
             cropType={activePlot.cropType}
