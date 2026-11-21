@@ -79,6 +79,10 @@ export function SolenoidValveDigitalTwin({
     },
   ]);
 
+  const zone1Open = zones.find((zone) => zone.id === "zone-1")?.isOpen ?? false;
+  const zone2Open = zones.find((zone) => zone.id === "zone-2")?.isOpen ?? false;
+  const zone3Open = zones.find((zone) => zone.id === "zone-3")?.isOpen ?? false;
+
   const [operatingMode, setOperatingMode] = useState<"smart" | "manual">("smart");
   const [sessionLiters, setSessionLiters] = useState(482);
   const [showPayload, setShowPayload] = useState(false);
@@ -328,10 +332,10 @@ export function SolenoidValveDigitalTwin({
           {/* ----------------- ZONE 1: PRIMARY ROOT DRIP ----------------- */}
           <path
             d="M 150 45 L 260 45"
-            stroke={zones[0]!.isOpen ? "url(#cyberWaterGrad)" : "#334155"}
+            stroke={zone1Open ? "url(#cyberWaterGrad)" : "#334155"}
             strokeWidth="6"
             strokeLinecap="round"
-            className={zones[0]!.isOpen ? "pipe-active pipe-glow" : ""}
+            className={zone1Open ? "pipe-active pipe-glow" : ""}
           />
 
           {/* Solenoid Valve 1 Actuator Box */}
@@ -346,26 +350,26 @@ export function SolenoidValveDigitalTwin({
               width="36"
               height="26"
               rx="4"
-              fill={zones[0]!.isOpen ? "#0f766e" : "#1e293b"}
-              stroke={zones[0]!.isOpen ? "#2dd4bf" : "#ef4444"}
+              fill={zone1Open ? "#0f766e" : "#1e293b"}
+              stroke={zone1Open ? "#2dd4bf" : "#ef4444"}
               strokeWidth="2"
             />
             <text x="278" y="49" fill="#ffffff" fontSize="9" textAnchor="middle" fontWeight="bold" fontFamily="monospace">
-              {zones[0]!.isOpen ? "ON" : "OFF"}
+              {zone1Open ? "ON" : "OFF"}
             </text>
           </g>
 
           {/* Zone 1 Lateral Line with Emitter Ripples */}
           <path
             d="M 296 45 L 685 45"
-            stroke={zones[0]!.isOpen ? "url(#cyberWaterGrad)" : "#1e293b"}
+            stroke={zone1Open ? "url(#cyberWaterGrad)" : "#1e293b"}
             strokeWidth="5"
             strokeLinecap="round"
-            className={zones[0]!.isOpen ? "pipe-active pipe-glow" : ""}
+            className={zone1Open ? "pipe-active pipe-glow" : ""}
           />
 
           {/* Emitters & Water Drop Ripples along Zone 1 */}
-          {zones[0]!.isOpen && (
+          {zone1Open && (
             <>
               <circle cx="370" cy="45" r="4" fill="#38bdf8" />
               <circle cx="370" cy="45" r="8" fill="none" stroke="#38bdf8" strokeWidth="1.5" className="emitter-wave" />
@@ -376,17 +380,17 @@ export function SolenoidValveDigitalTwin({
             </>
           )}
 
-          <text x="320" y="32" fill={zones[0]!.isOpen ? "#2dd4bf" : "#64748b"} fontSize="11" fontWeight="bold">
-            Zone 1: Lateral Drip (38 L/min) {zones[0]!.isOpen ? "— 💧 DISPENSING ROOT WATER" : "— STANDBY"}
+          <text x="320" y="32" fill={zone1Open ? "#2dd4bf" : "#64748b"} fontSize="11" fontWeight="bold">
+            Zone 1: Lateral Drip (38 L/min) {zone1Open ? "— 💧 DISPENSING ROOT WATER" : "— STANDBY"}
           </text>
 
           {/* ----------------- ZONE 2: SUB-SURFACE FURROW DRIP ----------------- */}
           <path
             d="M 150 100 L 260 100"
-            stroke={zones[1]!.isOpen ? "url(#cyberWaterGrad)" : "#334155"}
+            stroke={zone2Open ? "url(#cyberWaterGrad)" : "#334155"}
             strokeWidth="6"
             strokeLinecap="round"
-            className={zones[1]!.isOpen ? "pipe-active pipe-glow" : ""}
+            className={zone2Open ? "pipe-active pipe-glow" : ""}
           />
 
           {/* Solenoid Valve 2 Actuator Box */}
@@ -401,25 +405,25 @@ export function SolenoidValveDigitalTwin({
               width="36"
               height="26"
               rx="4"
-              fill={zones[1]!.isOpen ? "#0f766e" : "#1e293b"}
-              stroke={zones[1]!.isOpen ? "#2dd4bf" : "#ef4444"}
+              fill={zone2Open ? "#0f766e" : "#1e293b"}
+              stroke={zone2Open ? "#2dd4bf" : "#ef4444"}
               strokeWidth="2"
             />
             <text x="278" y="104" fill="#ffffff" fontSize="9" textAnchor="middle" fontWeight="bold" fontFamily="monospace">
-              {zones[1]!.isOpen ? "ON" : "OFF"}
+              {zone2Open ? "ON" : "OFF"}
             </text>
           </g>
 
           {/* Zone 2 Lateral Line */}
           <path
             d="M 296 100 L 685 100"
-            stroke={zones[1]!.isOpen ? "url(#cyberWaterGrad)" : "#1e293b"}
+            stroke={zone2Open ? "url(#cyberWaterGrad)" : "#1e293b"}
             strokeWidth="5"
             strokeLinecap="round"
-            className={zones[1]!.isOpen ? "pipe-active pipe-glow" : ""}
+            className={zone2Open ? "pipe-active pipe-glow" : ""}
           />
 
-          {zones[1]!.isOpen && (
+          {zone2Open && (
             <>
               <circle cx="390" cy="100" r="4" fill="#10b981" />
               <circle cx="390" cy="100" r="8" fill="none" stroke="#10b981" strokeWidth="1.5" className="emitter-wave" />
@@ -430,17 +434,17 @@ export function SolenoidValveDigitalTwin({
             </>
           )}
 
-          <text x="320" y="87" fill={zones[1]!.isOpen ? "#2dd4bf" : "#64748b"} fontSize="11" fontWeight="bold">
-            Zone 2: Sub-Surface Furrow Tape (26 L/min) {zones[1]!.isOpen ? "— 💧 DISPENSING" : "— STANDBY"}
+          <text x="320" y="87" fill={zone2Open ? "#2dd4bf" : "#64748b"} fontSize="11" fontWeight="bold">
+            Zone 2: Sub-Surface Furrow Tape (26 L/min) {zone2Open ? "— 💧 DISPENSING" : "— STANDBY"}
           </text>
 
           {/* ----------------- ZONE 3: MICRO-SPRINKLER ----------------- */}
           <path
             d="M 150 155 L 260 155"
-            stroke={zones[2]!.isOpen ? "url(#cyberWaterGrad)" : "#334155"}
+            stroke={zone3Open ? "url(#cyberWaterGrad)" : "#334155"}
             strokeWidth="6"
             strokeLinecap="round"
-            className={zones[2]!.isOpen ? "pipe-active pipe-glow" : ""}
+            className={zone3Open ? "pipe-active pipe-glow" : ""}
           />
 
           {/* Solenoid Valve 3 Actuator Box */}
@@ -455,25 +459,25 @@ export function SolenoidValveDigitalTwin({
               width="36"
               height="26"
               rx="4"
-              fill={zones[2]!.isOpen ? "#0f766e" : "#1e293b"}
-              stroke={zones[2]!.isOpen ? "#2dd4bf" : "#ef4444"}
+              fill={zone3Open ? "#0f766e" : "#1e293b"}
+              stroke={zone3Open ? "#2dd4bf" : "#ef4444"}
               strokeWidth="2"
             />
             <text x="278" y="159" fill="#ffffff" fontSize="9" textAnchor="middle" fontWeight="bold" fontFamily="monospace">
-              {zones[2]!.isOpen ? "ON" : "OFF"}
+              {zone3Open ? "ON" : "OFF"}
             </text>
           </g>
 
           {/* Zone 3 Lateral Line */}
           <path
             d="M 296 155 L 685 155"
-            stroke={zones[2]!.isOpen ? "url(#cyberWaterGrad)" : "#1e293b"}
+            stroke={zone3Open ? "url(#cyberWaterGrad)" : "#1e293b"}
             strokeWidth="5"
             strokeLinecap="round"
-            className={zones[2]!.isOpen ? "pipe-active pipe-glow" : ""}
+            className={zone3Open ? "pipe-active pipe-glow" : ""}
           />
 
-          {zones[2]!.isOpen && (
+          {zone3Open && (
             <>
               <circle cx="410" cy="155" r="4" fill="#a855f7" />
               <circle cx="410" cy="155" r="9" fill="none" stroke="#a855f7" strokeWidth="1.5" className="emitter-wave" />
@@ -482,8 +486,8 @@ export function SolenoidValveDigitalTwin({
             </>
           )}
 
-          <text x="320" y="142" fill={zones[2]!.isOpen ? "#c084fc" : "#64748b"} fontSize="11" fontWeight="bold">
-            Zone 3: Canopy Micro-Sprinkler (18 L/min) {zones[2]!.isOpen ? "— 💧 MISTING ACTIVE" : "— STANDBY"}
+          <text x="320" y="142" fill={zone3Open ? "#c084fc" : "#64748b"} fontSize="11" fontWeight="bold">
+            Zone 3: Canopy Micro-Sprinkler (18 L/min) {zone3Open ? "— 💧 MISTING ACTIVE" : "— STANDBY"}
           </text>
         </svg>
       </div>

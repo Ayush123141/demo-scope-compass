@@ -74,9 +74,18 @@ export function assessClimateRisk(input: ClimateRiskInput): ClimateRiskAssessmen
     ? (history.totalRainfallMm / Math.max(history.dayCount, 1)) * 30
     : null;
   const dryDays = history?.currentDrySpellDays ?? null;
-  const hasSoil = typeof input.soilMoisturePercent === "number" && Number.isFinite(input.soilMoisturePercent);
-  const hasForecast = typeof input.forecastRainfallMm24h === "number" && Number.isFinite(input.forecastRainfallMm24h);
-  const hasTemperature = typeof input.currentTemperatureC === "number" && Number.isFinite(input.currentTemperatureC);
+  const soilMoisture = typeof input.soilMoisturePercent === "number" && Number.isFinite(input.soilMoisturePercent)
+    ? input.soilMoisturePercent
+    : null;
+  const forecastRainfall = typeof input.forecastRainfallMm24h === "number" && Number.isFinite(input.forecastRainfallMm24h)
+    ? input.forecastRainfallMm24h
+    : null;
+  const currentTemperature = typeof input.currentTemperatureC === "number" && Number.isFinite(input.currentTemperatureC)
+    ? input.currentTemperatureC
+    : null;
+  const hasSoil = soilMoisture !== null;
+  const hasForecast = forecastRainfall !== null;
+  const hasTemperature = currentTemperature !== null;
   const hasRainHistory = rainfall30d !== null && history !== null && history.dayCount >= 14;
 
   let droughtScore: number | null = null;
@@ -90,12 +99,12 @@ export function assessClimateRisk(input: ClimateRiskInput): ClimateRiskAssessmen
       droughtScore += 15;
       droughtFactors.push(`About ${rainfall30d.toFixed(0)} mm rain in the last 30 days`);
     }
-    if (input.soilMoisturePercent < 30) {
+    if (soilMoisture !== null && soilMoisture < 30) {
       droughtScore += 35;
-      droughtFactors.push(`Soil moisture is ${input.soilMoisturePercent}%`);
-    } else if (input.soilMoisturePercent < 38) {
+      droughtFactors.push(`Soil moisture is ${soilMoisture}%`);
+    } else if (soilMoisture !== null && soilMoisture < 38) {
       droughtScore += 22;
-      droughtFactors.push(`Soil moisture is ${input.soilMoisturePercent}%`);
+      droughtFactors.push(`Soil moisture is ${soilMoisture}%`);
     }
     if (dryDays !== null && dryDays >= 14) {
       droughtScore += 25;
@@ -112,22 +121,22 @@ export function assessClimateRisk(input: ClimateRiskInput): ClimateRiskAssessmen
   const drySpellFactors = dryDays === null ? [] : [`Current dry spell: ${dryDays} days (<1 mm/day)`];
 
   let rainScore: number | null = null;
-  if (hasForecast && input.forecastRainfallMm24h !== null) {
-    const rain = input.forecastRainfallMm24h;
+  if (forecastRainfall !== null) {
+    const rain = forecastRainfall;
     rainScore = rain >= 40 ? 90 : rain >= 25 ? 78 : rain >= 15 ? 58 : rain >= 8 ? 32 : 8;
   }
 
   let heatScore: number | null = null;
-  if (hasTemperature && input.currentTemperatureC !== null) {
-    const temperature = input.currentTemperatureC;
+  if (currentTemperature !== null) {
+    const temperature = currentTemperature;
     heatScore = temperature >= 42 ? 90 : temperature >= 39 ? 78 : temperature >= 36 ? 55 : temperature >= 33 ? 32 : 8;
   }
 
   let waterloggingScore: number | null = null;
   const waterloggingFactors: string[] = [];
-  if (hasSoil && hasForecast && input.forecastRainfallMm24h !== null && input.soilMoisturePercent !== null) {
-    const moisture = input.soilMoisturePercent;
-    const rain = input.forecastRainfallMm24h;
+  if (soilMoisture !== null && forecastRainfall !== null) {
+    const moisture = soilMoisture;
+    const rain = forecastRainfall;
     waterloggingScore = moisture >= 45 && rain >= 15 ? 86 : moisture >= 40 && rain >= 20 ? 72 : moisture >= 45 ? 38 : 10;
     if (moisture >= 40) waterloggingFactors.push(`Soil moisture is ${moisture}%`);
     if (rain >= 15) waterloggingFactors.push(`${rain.toFixed(1)} mm forecast over 24 hours`);
@@ -136,8 +145,8 @@ export function assessClimateRisk(input: ClimateRiskInput): ClimateRiskAssessmen
   const items = [
     makeRisk("drought", "Drought stress", droughtScore, droughtFactors, "Check soil in the root zone and plan water use with the local forecast.", confidence(droughtFactors.length), input.updatedAt),
     makeRisk("dry_spell", "Extended dry spell", drySpellScore, drySpellFactors, "Check the field and crop condition; a dry-spell indicator is not an irrigation order.", dryDays === null ? "Insufficient data" : "Limited", input.updatedAt),
-    makeRisk("heavy_rain", "Heavy rainfall", rainScore, hasForecast && input.forecastRainfallMm24h !== null ? [`24-hour forecast: ${input.forecastRainfallMm24h.toFixed(1)} mm`] : [], "Monitor local forecast updates and inspect field drainage before rain arrives.", hasForecast ? "Limited" : "Insufficient data", input.updatedAt),
-    makeRisk("heat_stress", "Heat stress", heatScore, hasTemperature && input.currentTemperatureC !== null ? [`Current temperature: ${input.currentTemperatureC.toFixed(1)} °C`] : [], "Watch crop and soil conditions during hot periods; this prototype does not diagnose crop damage.", hasTemperature ? "Limited" : "Insufficient data", input.updatedAt),
+    makeRisk("heavy_rain", "Heavy rainfall", rainScore, forecastRainfall !== null ? [`24-hour forecast: ${forecastRainfall.toFixed(1)} mm`] : [], "Monitor local forecast updates and inspect field drainage before rain arrives.", hasForecast ? "Limited" : "Insufficient data", input.updatedAt),
+    makeRisk("heat_stress", "Heat stress", heatScore, currentTemperature !== null ? [`Current temperature: ${currentTemperature.toFixed(1)} °C`] : [], "Watch crop and soil conditions during hot periods; this prototype does not diagnose crop damage.", hasTemperature ? "Limited" : "Insufficient data", input.updatedAt),
     makeRisk("waterlogging", "Excess moisture / waterlogging", waterloggingScore, waterloggingFactors, "Inspect low areas and drainage; do not change irrigation automatically.", hasSoil && hasForecast ? "Moderate" : "Insufficient data", input.updatedAt),
   ];
   const availableScores = items.flatMap((item) => item.score === null ? [] : [item.score]);

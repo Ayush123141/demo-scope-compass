@@ -1,5 +1,10 @@
 # Mitti Sentinel — Master Roadmap & Presentation Pitch Reference
 
+## Current correction
+- [ ] Allow limited sensor-and-weather advice when satellite imagery is unavailable, with an explicit field-check requirement.
+- [ ] Keep stale or missing sensor/forecast safeguards and label all inputs and advice honestly.
+- [ ] Add regression tests and verify the preview after the code fixes.
+
 > **"Real Field Intelligence, Honest AI."**  
 > Physical IoT Soil Telemetry fused with Copernicus Sentinel-2 Multi-Spectral Earth Observation, Open-Meteo ECMWF Meteorology, and Google Gemini 2.5 Flash Agronomic Intelligence.
 
