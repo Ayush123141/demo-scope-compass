@@ -395,6 +395,10 @@ export function FarmerAuthModal({
             </Button>
           </form>
         )}
+
+        <div className="mt-4 pt-3 border-t border-white/10 text-center text-[10px] text-white/50">
+          Engineered &amp; Architected by <span className="text-white/80 font-medium">Ayush Wadalkar</span> · Lead Developer
+        </div>
       </motion.div>
     </div>
   );

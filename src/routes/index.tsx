@@ -486,6 +486,9 @@ function MittiSentinel() {
           <span className="brand-name">
             mitti<span>sentinel</span>
           </span>
+          <span className="hidden xl:inline-flex px-2 py-0.5 ml-2 rounded-full text-[10px] font-mono font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            Dev: Ayush Wadalkar
+          </span>
         </a>
 
         <nav className="topnav" aria-label="Main navigation">
@@ -563,7 +566,7 @@ function MittiSentinel() {
           <div className="intro-copy">
             <div className="eyebrow">
               <span className="eyebrow-line" />
-              INTELLIGENT FIELD SENTINEL <span className="eyebrow-separator">/</span> MAHARASHTRA &amp; PUNJAB
+              INTELLIGENT FIELD SENTINEL <span className="eyebrow-separator">/</span> MAHARASHTRA &amp; PUNJAB <span className="eyebrow-separator">/</span> LEAD ARCHITECT: AYUSH WADALKAR
             </div>
             <h1>
               Ground truth on <span>your soil.</span>
@@ -1609,11 +1612,45 @@ function MittiSentinel() {
             Mitti Sentinel never autonomously activates irrigation without explicit farmer review.
           </div>
 
+          {/* Lead Developer & Copyright Compliance Banner */}
+          <div className="lead-dev-banner my-6 p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-black/80 to-teal-950/40 border border-emerald-500/25 shadow-lg">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-extrabold text-sm shadow-sm shadow-emerald-500/20">
+                  AW
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-white tracking-wide">Ayush Wadalkar</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      Lead Developer &amp; System Architect
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/60 mt-0.5">
+                    Original engineering, full-stack architecture &amp; embedded hydrology for IdeaForage Hackathon 2026.
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center sm:text-right text-xs">
+                <div className="text-white/80 font-medium flex items-center justify-center sm:justify-end gap-1.5">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <span>Licensed under MIT · Non-Infringing Open Agritech</span>
+                </div>
+                <p className="text-[11px] text-white/45 mt-0.5">
+                  Full fair-use attribution preserved for ESA Copernicus Sentinel-2 &amp; Open-Meteo models.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="footer-bottom">
             <a className="footer-brand" href="#home">
               <Leaf size={15} /> Mitti Sentinel
             </a>
-            <span>Built with honest engineering: real where it counts, transparent where simulated.</span>
+            <span>
+              Engineered with pride by <b>Ayush Wadalkar</b>. Real where it counts, transparent where simulated.
+            </span>
             <a className="footer-backtop" href="#home">
               Back to top <ArrowUpRight size={14} />
             </a>

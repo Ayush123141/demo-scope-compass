@@ -1,12 +1,17 @@
 # Mitti Sentinel — Master Roadmap & Presentation Pitch Reference
 
-## Current correction
-- [ ] Allow limited sensor-and-weather advice when satellite imagery is unavailable, with an explicit field-check requirement.
-- [ ] Keep stale or missing sensor/forecast safeguards and label all inputs and advice honestly.
-- [ ] Add regression tests and verify the preview after the code fixes.
+**Lead Developer & System Architect:** **Ayush Wadalkar** ([@Ayush123141](https://github.com/Ayush123141))  
+*IdeaForage Hackathon 2026 — Original Agritech Research & Development*
 
 > **"Real Field Intelligence, Honest AI."**  
 > Physical IoT Soil Telemetry fused with Copernicus Sentinel-2 Multi-Spectral Earth Observation, Gram Panchayat LoRaWAN Mesh Gateways, Open-Meteo ECMWF Meteorology, and Google Gemini 2.5 Flash Agronomic Intelligence.
+
+---
+
+## 👨‍💻 Engineering Leadership & Attribution
+- **Conceived, Architected & Programmed by:** **Ayush Wadalkar**
+- **Repository:** [github.com/Ayush123141/demo-scope-compass](https://github.com/Ayush123141/demo-scope-compass)
+- **Copyright & Integrity Statement:** Original codebase developed for the empowerment of Indian smallholder farmers. All external spaceborne data (Copernicus Sentinel-2 via ESA) and atmospheric reanalysis models (Open-Meteo) are properly attributed with zero copyright infringement. Fully compliant with open-source MIT guidelines.
 
 ---
 

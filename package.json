@@ -1,5 +1,12 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "mitti-sentinel",
+  "version": "2.4.0",
+  "description": "Mitti Sentinel — Physical IoT Soil Telemetry fused with Copernicus Sentinel-2 Satellite Intelligence and Google Gemini Copilot",
+  "author": "Ayush Wadalkar <ayushwadalkar613@gmail.com> (https://github.com/Ayush123141)",
+  "contributors": [
+    "Ayush Wadalkar (Lead Developer & Agritech Architect)"
+  ],
+  "license": "MIT",
   "private": true,
   "sideEffects": false,
   "type": "module",

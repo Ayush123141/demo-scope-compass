@@ -218,5 +218,25 @@ All 12 tests pass across 2 test suites ([detailed in TESTING.md](TESTING.md)):
 
 ---
 
+## 👨‍💻 Project Leadership & Developer Credits
+
+**Lead Developer & System Architect:** **Ayush Wadalkar**  
+- **GitHub:** [@Ayush123141](https://github.com/Ayush123141)  
+- **Email:** `ayushwadalkar613@gmail.com`  
+- **Role:** Full-Stack Architecture, Physical IoT Firmware & Hydrology Modeling, Multi-Spectral Geospatial Integration, Two-Way Regional Voice System, and Solenoid Digital Twin Engineering.
+
+---
+
+## 🛡️ Intellectual Property, Attribution & Copyright Compliance
+
+- **Original Creation:** Mitti Sentinel was conceived, engineered, and built by **Ayush Wadalkar** as an original agritech innovation for the IdeaForage Hackathon 2026.
+- **Fair Use & Data Attributions:**
+  - **Earth Observation Imagery:** European Space Agency (ESA) Copernicus Sentinel-2 L2A open-access data processed via Sentinel Hub / Esri World Imagery. All upstream Copernicus open data licenses respected.
+  - **Meteorological Data:** Open-Meteo & ECMWF Integrated Forecasting System (IFS) open weather APIs.
+  - **Agronomic Formulations:** FAO-56 Penman-Monteith guidelines and standard peer-reviewed vegetation formulas (Gao 1996 NDWI, Huete 1988 SAVI).
+- **License:** Permissive **MIT License**. Free for non-commercial educational, academic research, and grassroots farmer welfare adoption. All third-party libraries retain their respective licenses.
+
+---
+
 ## 📜 License
-MIT License. Built for hackathon innovation.
+MIT License. Conceived, architected & developed by Ayush Wadalkar.
