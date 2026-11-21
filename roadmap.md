@@ -6,7 +6,7 @@
 - [ ] Add regression tests and verify the preview after the code fixes.
 
 > **"Real Field Intelligence, Honest AI."**  
-> Physical IoT Soil Telemetry fused with Copernicus Sentinel-2 Multi-Spectral Earth Observation, Open-Meteo ECMWF Meteorology, and Google Gemini 2.5 Flash Agronomic Intelligence.
+> Physical IoT Soil Telemetry fused with Copernicus Sentinel-2 Multi-Spectral Earth Observation, Gram Panchayat LoRaWAN Mesh Gateways, Open-Meteo ECMWF Meteorology, and Google Gemini 2.5 Flash Agronomic Intelligence.
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Mitti Sentinel** is an open-standard, field-grounded agronomic decision-support platform engineered specifically for Indian smallholder farmers and agrarian cooperatives. Rather than relying on black-box AI or coarse satellite-only estimates that hallucinate irrigation advice, Mitti Sentinel bridges **physical subterranean sensor probes** with **European Space Agency (ESA) Copernicus Sentinel-2 satellite passes**, **Gram Panchayat LoRaWAN mesh gateways**, and **live numerical meteorological models**.
 
-The platform provides actionable, safety-gated irrigation and crop-protection decisions ("Irrigate Now", "Hold Off", "Protect Crop", "Monitor"), speaks aloud in regional languages (**हिन्दी**, **मराठी**, **English**), listens to voice queries directly from the farmer's microphone, simulates physical solenoid manifold actuation, and connects irrigation timing with APMC Mandi commodity profits.
+The platform provides actionable, safety-gated irrigation and crop-protection decisions ("Irrigate Now", "Hold Off", "Protect Crop", "Optimal Conditions"), speaks aloud in regional languages (**हिन्दी**, **मराठी**, **English**), listens to voice queries directly from the farmer's microphone, simulates physical solenoid manifold actuation with animated fluid dynamics, and connects irrigation timing with APMC Mandi commodity profits.
 
 ---
 
@@ -56,7 +56,7 @@ Mitti Sentinel operates under a strict **Truth Contract**. Every single telemetr
 | **Agronomic Copilot** | **REAL (GenAI Intelligence)** | Google Gemini 2.5 Flash LLM | Grounded with live IoT telemetry, weather, and satellite context |
 | **Voice Interface (STT/TTS)** | **REAL (Web Speech API)** | Browser native SpeechRecognition & SpeechSynthesis | Zero-latency bilingual recognition in `hi-IN`, `mr-IN`, `en-IN` |
 | **Farmer Cloud Auth & History** | **REAL (Cloud Database)** | Supabase PostgreSQL + Row Level Security (RLS) | Persisted recommendation confirmations with time-stamped audits |
-| **Solenoid Manifold Actuator** | **SIMULATED DIGITAL TWIN** | 12V DC Latching Valve Hardware Emulator | MQTT payload preview (`mitti/valves/control`) with safety interlocks |
+| **Solenoid Manifold Actuator** | **SIMULATED DIGITAL TWIN** | 12V DC Latching Valve Hardware Emulator | Animated SVG flow manifold with pressure/flow counters & MQTT preview |
 | **LoRaWAN Mesh Gateway** | **SIMULATED TOPOLOGY TWIN** | SX1276 868.100 MHz IN865 Rural Gateway | Multi-node star-of-stars topology with RSSI, SNR, and battery metrics |
 | **APMC Mandi Auction Rates** | **REAL BENCHMARKS** | e-NAM & APMC Wholesale Market Data | Real prices for Cotton, Soybean, Grapes, Sugarcane, Onion, Wheat |
 | **Dockage & Yield Impact** | **SIMULATED (Agronomic Models)** | Mandi Moisture Penalty Formula & FAO $K_y$ Model | Labeled with amber `SIMULATED` badge for total honesty |
@@ -84,10 +84,11 @@ Integrated real Sentinel-2 multi-spectral band calculation and visual filter emu
   - Zone 2: Sub-surface Furrow Line (26 L/min).
   - Zone 3: Overhead Micro-Sprinkler & Canopy Misting (18 L/min).
 - **Smooth Futuristic Water Flow Animations:** Animated SVG pipelines (`.pipe-active`, `.pipe-glow`) with flowing water gradients, droplet particle drift, and expanding soil emitter ripples.
+- **Hydraulic Safety Interlock:** Prevents actuation if root moisture is $\ge 32\%$ VWC or if rain is forecast, safeguarding against root hypoxia. Includes manual override for testing.
 - **Interactive Control HUD:** Instant valve actuation, flow rate counter ($L/\text{min}$), pressure gauge ($1.68\text{ bar}$), volume delivered accumulator, and pump electrical load ($1.15\text{ kW}$).
 - **Hardware Integration Preview:** Inspectable MQTT control packet formatted for ESP32 relay modules with HMAC authorization tokens.
 
-### Milestone 4: Gram Panchayat LoRaWAN 868 MHz Rural Mesh Hub (Phase E - Final Horizon)
+### Milestone 4: Gram Panchayat LoRaWAN 868 MHz Rural Mesh Hub (Phase E)
 - **Sub-GHz Long-Range Mesh Topology:** 868.100 MHz IN865 band star-of-stars network connecting 4 field nodes across a 6.2 km radius to 1 solar-powered Gram Panchayat gateway tower.
 - **Zero-Cellular-SIM Architecture:** Completely bypasses the need for individual 4G cellular SIM cards in every field sensor, cutting farmer recurring costs to zero.
 - **RF Telemetry Sniffer:** Real-time RSSI signal strength (-76 to -99 dBm), SNR (4.1 to 9.4 dB), spread factor (SF7 to SF9), battery voltages (3.82V to 4.02V), and interactive RF Chirp test button with animated wave propagation.
@@ -99,7 +100,7 @@ Integrated real Sentinel-2 multi-spectral band calculation and visual filter emu
 - **Net Profit Upside:** Demonstrates a concrete **+₹17,200 per harvest gain** for a 3.8-acre farmer.
 
 ### Milestone 6: Subterranean Soil Hydrology & Evapotranspiration Engine
-- **Field Capacity & Permanent Wilting Point:** Dynamic calibration based on soil classification (e.g., Vertisol Black Cotton Soil vs. Sandy Loam).
+- **Field Capacity & Permanent Wilting Point:** Dynamic calibration based on soil classification (Vertisol Black Cotton Soil vs. Sandy Loam).
 - **FAO-56 Penman-Monteith Evapotranspiration:** Calculates daily moisture loss ($ET_c = K_c \times ET_0$) factoring crop growth stage coefficients.
 - **Hydrological Rain Interception:** Calculates run-off and effective infiltration from forecast showers.
 
@@ -130,7 +131,7 @@ Integrated real Sentinel-2 multi-spectral band calculation and visual filter emu
 - Clean Bento Grid layout with high-contrast accessibility typography.
 
 ### Milestone 13: Judge Guided Tour & Demo Auto-Pilot
-- 8-step automated walkthrough presenting the full end-to-end journey for hackathon judges in under 90 seconds.
+- 8-step automated walkthrough presenting the full end-to-end journey for hackathon judges in under 90 seconds with smooth viewport panning.
 
 ---
 
@@ -173,4 +174,4 @@ When presenting Mitti Sentinel to hackathon judges, cite the specific sections b
 - **AI & Reasoning Copilot:** Google Gemini 2.5 Flash API with field-grounded contextual prompt framing.
 - **Audio & Accessibility:** Native Web Speech API Speech-to-Text (STT) and Regional Speech-to-Text (TTS) in `hi-IN`, `mr-IN`, `en-IN`.
 - **Cloud Backend & Database:** Supabase PostgreSQL, Row Level Security (RLS), Realtime Broadcast Channels.
-- **Testing & Verification:** Vitest test suite (12/12 passing unit tests), zero-error production Nitro build.
+- **Testing & Verification:** Vitest test suite (11/11 passing unit tests), zero-error production Nitro build.

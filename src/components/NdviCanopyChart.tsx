@@ -38,7 +38,9 @@ export function NdviCanopyChart({
     { pass: "30 Oct", ndvi: 0.62, lai: 3.1, cloudCover: 0.8, vigorLabel: "Canopy Expansion" },
     { pass: "04 Nov", ndvi: 0.73, lai: 3.8, cloudCover: 0.0, vigorLabel: "Peak Chlorophyll Density" },
     { pass: "09 Nov", ndvi: 0.76, lai: 4.1, cloudCover: 2.1, vigorLabel: "Optimal Vigor Canopy" },
-    { pass: "14 Nov", ndvi: 0.71, lai: 3.9, cloudCover: 0.0, vigorLabel: "Current Grounded Pass" },
+    { pass: "14 Nov", ndvi: 0.71, lai: 3.9, cloudCover: 0.0, vigorLabel: "Vegetative Maturation" },
+    { pass: "19 Nov", ndvi: 0.74, lai: 4.0, cloudCover: 0.0, vigorLabel: "Stable Green Canopy" },
+    { pass: "21 Nov", ndvi: 0.75, lai: 4.2, cloudCover: 0.0, vigorLabel: "Current Grounded Pass" },
   ];
 
   const currentPass = data[activePassIndex] || data[data.length - 1]!;

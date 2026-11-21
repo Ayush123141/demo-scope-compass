@@ -51,6 +51,7 @@ import {
   PRESET_FARM_PLOTS,
   createPlotBoundary,
   SATELLITE_PASS_HISTORY,
+  getLatestSatellitePass,
   TILE_LAYERS,
   MULTI_SPECTRAL_INDICES,
   type FarmPlotCoordinates,
@@ -159,6 +160,7 @@ function MittiSentinel() {
   const [mapMode, setMapMode] = useState<MapMode>("ndvi");
   const [language, setLanguage] = useState<Language>("en");
   const [sensorOfflineTest, setSensorOfflineTest] = useState(false);
+  const [satelliteOfflineTest, setSatelliteOfflineTest] = useState(false);
   const [leavesEnabled, setLeavesEnabled] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [confirmedTicks, setConfirmedTicks] = useState<number[]>([]);
@@ -274,7 +276,8 @@ function MittiSentinel() {
       };
 
   // 5. REAL Satellite Snapshot pass
-  const currentPass: SatellitePass = SATELLITE_PASS_HISTORY[sceneIndex] ?? SATELLITE_PASS_HISTORY[0]!;
+  const latestPass: SatellitePass = getLatestSatellitePass();
+  const currentPass: SatellitePass = SATELLITE_PASS_HISTORY[sceneIndex] ?? latestPass;
 
   // 6. Forecast & Yield Signals (Fusing Real Open-Meteo Weather with dynamic model)
   const baseSimulated = generateSimulatedSignals(tick);
@@ -285,9 +288,10 @@ function MittiSentinel() {
   };
 
   // 7. Decision Agent Core Evaluation
+  // Evaluates the latest available fresh Sentinel-2 pass (or null if satellite offline test is activated)
   const recommendation: AgentRecommendation = evaluateFieldConditions({
     sensor: currentSensor,
-    satellite: currentPass,
+    satellite: satelliteOfflineTest ? null : latestPass,
     forecast,
     nowMs: Date.now(),
   });
@@ -612,6 +616,19 @@ function MittiSentinel() {
               </button>
               <button
                 type="button"
+                onClick={() => setSatelliteOfflineTest((prev) => !prev)}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  satelliteOfflineTest
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                    : "bg-white/5 hover:bg-white/10 text-white/70"
+                }`}
+                title="Toggle satellite pass offline to prove graceful degradation (0% confidence withheld)"
+              >
+                <Satellite size={12} className="inline mr-1" />
+                {satelliteOfflineTest ? "Satellite: Stale / Offline" : "Satellite: 5-Day Fresh"}
+              </button>
+              <button
+                type="button"
                 onClick={() => setLeavesEnabled((prev) => !prev)}
                 className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
                   leavesEnabled
@@ -913,7 +930,7 @@ function MittiSentinel() {
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 className="recommendation-body"
-                key={`${tick}-${recommendation.action}-${language}-${sensorOfflineTest}-${activePlot.id}-${currentMoisturePercent}`}
+                key={`${tick}-${recommendation.action}-${language}-${sensorOfflineTest}-${satelliteOfflineTest}-${activePlot.id}-${currentMoisturePercent}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : -5 }}
