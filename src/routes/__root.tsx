@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { GA_MEASUREMENT_ID } from "../lib/analytics";
 
 function NotFoundComponent() {
   return (
@@ -75,20 +76,25 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    // Replace these placeholders with the app's name and description when first building the app.
-    // Each content route, / included, must still set its own head(). Never add og:image or
-    // twitter:image here: every page without its own would inherit the root's preview image.
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Mitti Sentinel — Physical IoT Soil Telemetry & Copernicus Sentinel-2 Satellite Intelligence" },
+      {
+        name: "description",
+        content:
+          "Empowering Indian farmers with ground-truth IoT soil sensors, Sentinel-2 multi-spectral Earth observation, Open-Meteo weather models, and Google Gemini AI copilot.",
+      },
+      { name: "author", content: "Ayush Wadalkar" },
+      { property: "og:title", content: "Mitti Sentinel — Intelligent Field & Satellite Agronomy" },
+      {
+        property: "og:description",
+        content:
+          "Real capacitive soil moisture telemetry fused with Copernicus Sentinel-2 satellite passes, Solenoid valve digital twins, and two-way voice AI copilot.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:creator", content: "@Ayush123141" },
     ],
     links: [
       {
@@ -97,6 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "preconnect", href: "https://www.googletagmanager.com" },
+      { rel: "preconnect", href: "https://www.google-analytics.com" },
     ],
   }),
   shellComponent: RootShell,
@@ -110,6 +118,28 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/* Google Analytics 4 (gtag.js) */}
+        {GA_MEASUREMENT_ID && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${GA_MEASUREMENT_ID}', {
+                    send_page_view: true,
+                    anonymize_ip: true
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
       </head>
       <body>
         {children}

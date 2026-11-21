@@ -138,6 +138,11 @@ Integrated real Sentinel-2 multi-spectral band calculation and visual filter emu
 ### Milestone 13: Judge Guided Tour & Demo Auto-Pilot
 - 8-step automated walkthrough presenting the full end-to-end journey for hackathon judges in under 90 seconds with smooth viewport panning.
 
+### Milestone 14: Google Analytics 4 (GA4) Field & Agronomic Event Tracking
+- Global Site Tag (`gtag.js`) integration with configurable `VITE_GA_MEASUREMENT_ID`.
+- Domain-specific telemetry and interaction analytics: plots selected, spectral indices compared, valve actuations, voice copilot queries, and degradation safeguard triggers.
+- Privacy-preserving IP anonymization enabled by default.
+
 ---
 
 ## 5. Hackathon Pitch Deck Citations & Presentation Script Reference

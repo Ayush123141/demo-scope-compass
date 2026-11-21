@@ -44,6 +44,7 @@ Mitti Sentinel is engineered on modern web, embedded, geospatial, and cloud foun
   Hydraulics:     Animated SVG Manifold · 12V DC Latching Solenoid Digital Twin
   Meteorology:    Open-Meteo NWP · ECMWF IFS · FAO-56 Penman-Monteith Evapotranspiration
   Database & Auth:Supabase PostgreSQL 15 · Row Level Security (RLS) · Realtime Channels
+  Analytics:      Google Analytics 4 (GA4) · Privacy Anonymized · Custom Agronomic Events
   Testing & QA:   Vitest 4.1 · Strict TypeScript Checks · Zero-Error Production Nitro
 ```
 

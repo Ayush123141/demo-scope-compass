@@ -16,6 +16,7 @@ import {
   Radio,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { analytics } from "@/lib/analytics";
 
 export interface ZoneValve {
   id: string;
@@ -109,6 +110,7 @@ export function SolenoidValveDigitalTwin({
       prev.map((z) => {
         if (z.id === zoneId) {
           const nextState = !z.isOpen;
+          analytics.actuateSolenoidValve(Number(z.id.replace(/\D/g, "")) || 1, nextState, z.nominalFlowLpm);
           setLastActionMessage(
             nextState
               ? `${z.shortName} OPENED · Dispensing ${z.nominalFlowLpm} L/min`

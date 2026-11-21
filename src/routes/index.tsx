@@ -111,6 +111,7 @@ import { KisanSchemeNavigator } from "@/components/KisanSchemeNavigator";
 import { JudgeGuidedTour } from "@/components/JudgeGuidedTour";
 import { askMittiAi, isGeminiConfigured } from "@/lib/gemini-service";
 import { FallingLeaves } from "falling-leaves/react";
+import { analytics } from "@/lib/analytics";
 import "leaflet/dist/leaflet.css";
 
 type Language = "en" | "hi" | "mr";
@@ -345,6 +346,7 @@ function MittiSentinel() {
   async function handleConfirmRecommendation() {
     if (isConfirmed || recommendation.sourceLabel === "Data unavailable") return;
     setConfirmedTicks((prev) => [...prev, tick]);
+    analytics.confirmIrrigationAdvisory(recommendation.action, recommendation.confidencePercent);
 
     if (isSupabaseConfigured) {
       // 1. Save recommendation record to Supabase
@@ -387,6 +389,7 @@ function MittiSentinel() {
       language,
     };
 
+    analytics.voiceCopilotQuery(language, promptToSend.length);
     const reply = await askMittiAi(promptToSend, context);
     setAiAnswer(reply);
     setIsAiLoading(false);
@@ -1416,6 +1419,7 @@ function MittiSentinel() {
                     key={p.id}
                     onClick={() => {
                       setActivePlot(p);
+                      analytics.selectPlot(p.id, p.name, p.cropType);
                       setIsPlotModalOpen(false);
                     }}
                     className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between ${
@@ -1663,6 +1667,9 @@ function MittiSentinel() {
         isRunning={isTourRunning}
         onStartTour={() => setIsTourRunning(true)}
         onStopTour={() => setIsTourRunning(false)}
+        onStepChange={(stepIdx) => {
+          analytics.triggerJudgeTourStep(stepIdx, `Tour Step ${stepIdx + 1}`);
+        }}
       />
     </main>
   );
